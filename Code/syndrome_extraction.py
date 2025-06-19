@@ -1,0 +1,365 @@
+"""
+Syndrome Extraction Circuits Visualization
+
+This script creates visualizations for DiVincenzo-Aliferis syndrome extraction circuits
+as described in Brennen et al.'s paper, focusing on fault-tolerant measurement protocols.
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.patches import Rectangle, FancyBboxPatch, Circle
+import matplotlib.patches as mpatches
+import os
+
+# Set up the color palettes
+seqCmap = sns.color_palette("mako", as_cmap=True)
+divCmap = sns.cubehelix_palette(start=.5, rot=-.5, as_cmap=True)
+lightCmap = sns.cubehelix_palette(start=2, rot=0, dark=0, light=.95, reverse=True, as_cmap=True)
+
+def create_syndrome_extraction_circuit():
+    """
+    Create visualization of fault-tolerant syndrome extraction circuit
+    """
+    print("Creating syndrome extraction circuit visualization...")
+    
+    fig, ax = plt.subplots(1, 1, figsize=(16, 10))
+    
+    # Circuit parameters
+    n_data_qubits = 7  # Example: 7-qubit code
+    n_ancilla_qubits = 3  # Syndrome qubits
+    n_time_steps = 8
+    
+    # Define qubit positions
+    data_y_positions = np.arange(n_data_qubits)
+    ancilla_y_positions = np.arange(n_data_qubits, n_data_qubits + n_ancilla_qubits)
+    all_y_positions = np.concatenate([data_y_positions, ancilla_y_positions])
+    
+    # Draw horizontal qubit lines
+    for i, y in enumerate(all_y_positions):
+        ax.plot([0, n_time_steps], [y, y], 'k-', linewidth=2, alpha=0.8)
+        
+        # Label qubits
+        if y < n_data_qubits:
+            ax.text(-0.5, y, f'$|d_{i}\\rangle$', ha='right', va='center', fontsize=12)
+        else:
+            ax.text(-0.5, y, f'$|a_{y-n_data_qubits}\\rangle$', ha='right', va='center', fontsize=12)
+    
+    # Define parity check structure (example for 7-qubit Steane code)
+    parity_checks = [
+        [0, 2, 4, 6],  # X-type stabilizer 1
+        [1, 3, 5, 6],  # X-type stabilizer 2  
+        [0, 1, 4, 5]   # X-type stabilizer 3
+    ]
+    
+    # Draw syndrome extraction gates
+    gate_times = [1, 3, 5]  # Time steps for syndrome extraction
+    
+    for check_idx, (time, check_qubits) in enumerate(zip(gate_times, parity_checks)):
+        ancilla_qubit = n_data_qubits + check_idx
+        
+        # Hadamard on ancilla (initialization)
+        h_rect = FancyBboxPatch((time-0.15, ancilla_qubit-0.15), 0.3, 0.3,
+                               boxstyle="round,pad=0.02", 
+                               facecolor=lightCmap(0.3), edgecolor='black')
+        ax.add_patch(h_rect)
+        ax.text(time, ancilla_qubit, 'H', ha='center', va='center', fontsize=10, fontweight='bold')
+        
+        # CNOT gates to data qubits
+        for data_qubit in check_qubits:
+            # Control dot on ancilla
+            control_circle = Circle((time, ancilla_qubit), 0.1, color='black')
+            ax.add_patch(control_circle)
+            
+            # Target on data qubit
+            target_circle = Circle((time, data_qubit), 0.15, fill=False, edgecolor='black', linewidth=2)
+            ax.add_patch(target_circle)
+            ax.plot([time-0.1, time+0.1], [data_qubit, data_qubit], 'k-', linewidth=2)
+            ax.plot([time, time], [data_qubit-0.1, data_qubit+0.1], 'k-', linewidth=2)
+            
+            # Connection line
+            ax.plot([time, time], [min(ancilla_qubit, data_qubit)+0.1, 
+                    max(ancilla_qubit, data_qubit)-0.1], 'k-', linewidth=1)
+    
+    # Measurement operations
+    meas_time = 7
+    for i in range(n_ancilla_qubits):
+        ancilla_qubit = n_data_qubits + i
+        
+        # Measurement box
+        meas_rect = FancyBboxPatch((meas_time-0.2, ancilla_qubit-0.2), 0.4, 0.4,
+                                  boxstyle="round,pad=0.02", 
+                                  facecolor=divCmap(0.5), edgecolor='black')
+        ax.add_patch(meas_rect)
+        ax.text(meas_time, ancilla_qubit, 'M', ha='center', va='center', 
+               fontsize=10, fontweight='bold')
+        
+        # Classical bit output
+        ax.plot([meas_time+0.2, meas_time+0.8], [ancilla_qubit, ancilla_qubit], 
+               'k-', linewidth=3)
+        ax.text(meas_time+1, ancilla_qubit, f'$s_{i}$', ha='left', va='center', fontsize=12)
+    
+    # Add error detection indicators
+    for i, check_qubits in enumerate(parity_checks):
+        y_pos = n_data_qubits + i
+        # Show which data qubits are involved in each check
+        for q in check_qubits:
+            ax.plot([gate_times[i], gate_times[i]], [q-0.05, q+0.05], 
+                   color=seqCmap(0.8), linewidth=4, alpha=0.7)
+    
+    # Formatting
+    ax.set_xlim(-1, n_time_steps + 1.5)
+    ax.set_ylim(-0.5, len(all_y_positions) - 0.5)
+    ax.set_xlabel('Time Steps', fontsize=14)
+    ax.set_title('Fault-Tolerant Syndrome Extraction Circuit\n' +
+                 'DiVincenzo-Aliferis Protocol for Quantum LDPC Codes', fontsize=16)
+    ax.set_aspect('equal')
+    
+    # Remove y-axis ticks
+    ax.set_yticks([])
+    
+    # Add legend
+    legend_elements = [
+        mpatches.Rectangle((0, 0), 1, 1, facecolor=lightCmap(0.3), label='Hadamard Gate'),
+        mpatches.Circle((0, 0), 0.1, facecolor='black', label='CNOT Control'),
+        mpatches.Circle((0, 0), 0.1, facecolor='white', edgecolor='black', label='CNOT Target'),
+        mpatches.Rectangle((0, 0), 1, 1, facecolor=divCmap(0.5), label='Measurement')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=11)
+    
+    # Add syndrome equations
+    ax.text(0.02, 0.98, 'Syndrome Equations:\n' +
+                        r'$s_0 = X_0 X_2 X_4 X_6$' + '\n' +
+                        r'$s_1 = X_1 X_3 X_5 X_6$' + '\n' +
+                        r'$s_2 = X_0 X_1 X_4 X_5$',
+           transform=ax.transAxes, fontsize=12,
+           bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+           verticalalignment='top')
+    
+    plt.tight_layout()
+    
+    # Save the plot
+    save_path = os.path.join(os.path.dirname(__file__), '..', 'Plots', 'syndrome_extraction_circuit.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Syndrome extraction circuit saved to {save_path}")
+
+
+def create_syndrome_error_analysis():
+    """
+    Create visualization of syndrome measurement errors and their effects
+    """
+    print("Creating syndrome error analysis...")
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # Left plot: Syndrome error probability vs physical error rate
+    p_phys = np.logspace(-4, -1, 100)
+    
+    # Different syndrome extraction strategies
+    strategies = ['Direct', 'Single Repeat', 'Double Repeat', 'Majority Vote']
+    colors = [seqCmap(i/len(strategies)) for i in range(len(strategies))]
+    
+    for i, strategy in enumerate(strategies):
+        if strategy == 'Direct':
+            # Direct measurement: syndrome error ~ physical error
+            p_synd = p_phys
+        elif strategy == 'Single Repeat':
+            # Single repetition: improved but not optimal
+            p_synd = p_phys**1.5
+        elif strategy == 'Double Repeat':
+            # Double repetition: quadratic improvement
+            p_synd = p_phys**2
+        else:  # Majority Vote
+            # Majority voting: best performance
+            p_synd = p_phys**2.5
+        
+        ax1.loglog(p_phys, p_synd, linewidth=2.5, color=colors[i], 
+                  label=strategy)
+    
+    # Add reference line
+    ax1.loglog(p_phys, p_phys, 'k--', alpha=0.5, linewidth=1, 
+              label='Physical Error Rate')
+    
+    ax1.set_xlabel('Physical Error Rate', fontsize=14)
+    ax1.set_ylabel('Syndrome Error Rate', fontsize=14)
+    ax1.set_title('Syndrome Measurement Error Mitigation', fontsize=16)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=12)
+    
+    # Right plot: Logical error rate vs syndrome accuracy
+    syndrome_fidelity = np.linspace(0.5, 1.0, 100)
+    
+    # Different code distances
+    distances = [3, 5, 7, 9]
+    dist_colors = [divCmap(i/len(distances)) for i in range(len(distances))]
+    
+    for i, d in enumerate(distances):
+        # Logical error rate increases with syndrome errors
+        # Model: p_L ~ (1-F_synd)^d where F_synd is syndrome fidelity
+        p_logical = (1 - syndrome_fidelity)**d * 0.1
+        
+        ax2.semilogy(syndrome_fidelity, p_logical, linewidth=2.5, 
+                    color=dist_colors[i], label=f'Distance d = {d}')
+    
+    # Add threshold
+    ax2.axhline(y=1e-6, color='red', linestyle='--', linewidth=2, alpha=0.7,
+               label='Target Logical Error ($10^{-6}$)')
+    
+    ax2.set_xlabel('Syndrome Measurement Fidelity', fontsize=14)
+    ax2.set_ylabel('Logical Error Rate', fontsize=14)
+    ax2.set_title('Logical Error vs Syndrome Fidelity', fontsize=16)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=12)
+    ax2.set_ylim(1e-8, 1e-1)
+    
+    plt.tight_layout()
+    
+    # Save the plot
+    save_path = os.path.join(os.path.dirname(__file__), '..', 'Plots', 'syndrome_error_analysis.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Syndrome error analysis saved to {save_path}")
+
+
+def create_fault_tolerant_measurement():
+    """
+    Create visualization of fault-tolerant measurement protocol comparison
+    """
+    print("Creating fault-tolerant measurement visualization...")
+    
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    
+    protocols = [
+        'Standard Measurement',
+        'Single Ancilla Repeat', 
+        'Double Ancilla Repeat',
+        'Flagged Syndrome Extraction'
+    ]
+    
+    for idx, (ax, protocol) in enumerate(zip(axes.flatten(), protocols)):
+        ax.set_title(f'{protocol}', fontsize=14, fontweight='bold')
+        
+        # Basic circuit layout
+        n_data = 4
+        n_ancilla = 2 if 'Double' in protocol else 1
+        if 'Flagged' in protocol:
+            n_ancilla = 3  # Extra flag qubits
+        
+        # Draw data qubits
+        for i in range(n_data):
+            ax.plot([0, 6], [i, i], 'k-', linewidth=2)
+            ax.text(-0.3, i, f'$d_{i}$', ha='right', va='center', fontsize=11)
+        
+        # Draw ancilla qubits
+        for i in range(n_ancilla):
+            y_pos = n_data + i
+            ax.plot([0, 6], [y_pos, y_pos], 'r-', linewidth=2, alpha=0.7)
+            
+            if 'Flagged' in protocol and i == n_ancilla-1:
+                ax.text(-0.3, y_pos, f'$f$', ha='right', va='center', fontsize=11, color='blue')
+            else:
+                ax.text(-0.3, y_pos, f'$a_{i}$', ha='right', va='center', fontsize=11, color='red')
+        
+        # Protocol-specific gates
+        if protocol == 'Standard Measurement':
+            # Simple syndrome extraction
+            times = [1, 3]
+            for t in times:
+                for i in range(n_data//2):
+                    # CNOT gates
+                    ax.plot([t, t], [i*2, n_data], 'k-', linewidth=1)
+                    ax.add_patch(Circle((t, i*2), 0.1, color='black'))
+                    ax.add_patch(Circle((t, n_data), 0.15, fill=False, edgecolor='black'))
+            
+            # Measurement
+            ax.add_patch(Rectangle((5, n_data-0.2), 0.4, 0.4, 
+                                 facecolor=divCmap(0.5), edgecolor='black'))
+            ax.text(5.2, n_data, 'M', ha='center', va='center', fontsize=10)
+            
+        elif 'Repeat' in protocol:
+            # Multiple rounds of syndrome extraction
+            rounds = 2 if 'Double' in protocol else 1
+            for round_idx in range(rounds + 1):
+                t = 1 + round_idx * 1.5
+                for i in range(n_data//2):
+                    ax.plot([t, t], [i*2, n_data + round_idx], 'k-', linewidth=1)
+                    ax.add_patch(Circle((t, i*2), 0.08, color='black'))
+                    ax.add_patch(Circle((t, n_data + round_idx), 0.12, fill=False, edgecolor='black'))
+                
+                # Measurement for each ancilla
+                ax.add_patch(Rectangle((t+0.8, n_data + round_idx - 0.15), 0.3, 0.3, 
+                                     facecolor=divCmap(0.5), edgecolor='black'))
+                ax.text(t+0.95, n_data + round_idx, 'M', ha='center', va='center', fontsize=8)
+        
+        else:  # Flagged syndrome extraction
+            # Main syndrome extraction
+            t = 1.5
+            for i in range(n_data//2):
+                ax.plot([t, t], [i*2, n_data], 'k-', linewidth=1)
+                ax.add_patch(Circle((t, i*2), 0.08, color='black'))
+                ax.add_patch(Circle((t, n_data), 0.12, fill=False, edgecolor='black'))
+            
+            # Flag qubit operations
+            for i in range(n_data//2):
+                ax.plot([t+0.5, t+0.5], [i*2, n_data+1], 'b-', linewidth=1)
+                ax.add_patch(Circle((t+0.5, i*2), 0.08, color='blue'))
+                ax.add_patch(Circle((t+0.5, n_data+1), 0.12, fill=False, edgecolor='blue'))
+            
+            # Measurements
+            for i in range(n_ancilla):
+                ax.add_patch(Rectangle((4.5, n_data + i - 0.15), 0.3, 0.3, 
+                                     facecolor=divCmap(0.5), edgecolor='black'))
+                ax.text(4.65, n_data + i, 'M', ha='center', va='center', fontsize=8)
+        
+        ax.set_xlim(-0.5, 6.5)
+        ax.set_ylim(-0.5, n_data + n_ancilla - 0.5)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        
+        # Add error rate annotation
+        if idx == 0:
+            error_rate = "High"
+            color = 'red'
+        elif idx == 1:
+            error_rate = "Medium"
+            color = 'orange'
+        elif idx == 2:
+            error_rate = "Low"
+            color = 'green'
+        else:
+            error_rate = "Lowest"
+            color = 'darkgreen'
+        
+        ax.text(0.95, 0.05, f'Error Rate: {error_rate}', 
+               transform=ax.transAxes, fontsize=11, color=color, fontweight='bold',
+               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    plt.suptitle('Fault-Tolerant Syndrome Measurement Protocols', fontsize=18)
+    plt.tight_layout()
+    
+    # Save the plot
+    save_path = os.path.join(os.path.dirname(__file__), '..', 'Plots', 'fault_tolerant_measurement.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Fault-tolerant measurement visualization saved to {save_path}")
+
+
+if __name__ == "__main__":
+    print("Generating syndrome extraction visualizations...")
+    
+    # Create output directory if it doesn't exist
+    plots_dir = os.path.join(os.path.dirname(__file__), '..', 'Plots')
+    os.makedirs(plots_dir, exist_ok=True)
+    
+    try:
+        create_syndrome_extraction_circuit()
+        create_syndrome_error_analysis()
+        create_fault_tolerant_measurement()
+        print("All syndrome extraction visualizations completed successfully!")
+        
+    except Exception as e:
+        print(f"Error in visualization generation: {e}")
