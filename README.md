@@ -1,5 +1,5 @@
-# Quantum Low-Density Parity-Check (LDPC) Codes
-###### Revolutionary Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
+# Quantum Low-Density Parity-Check Codes
+###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
 
 ![Cavity Cooperativity Analysis](Plots/syndrome_error_analysis.png)
 
