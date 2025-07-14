@@ -1,7 +1,35 @@
-# Quantum Low-Density Parity-Check Codes
-###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
+# Quantum Low-Density Parity-Check (LDPC) Codes
+###### Revolutionary Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
 
-![Cavity Cooperativity Analysis](Plots/syndrome_error_analysis.png)
+## 🚀 Interactive Real-Time LDPC Simulator
+
+Experience quantum error correction in action with our breakthrough interactive simulator! Click qubits to inject errors, watch syndrome extraction happen in real-time, and observe belief propagation decoding as it corrects quantum errors.
+
+![Interactive LDPC Simulator](Code+/Interactive%20Simulation.png)
+
+### Key Features
+- **Real-time error injection**: Click any qubit to cycle through |0⟩ → |1⟩ → X → Z → Y error states
+- **Live syndrome monitoring**: Watch the syndrome vector s = He update instantly when errors occur
+- **Belief propagation visualization**: See the decoding algorithm converge in real-time
+- **Cavity QED integration**: Adjust cooperativity parameters and observe gate fidelity effects
+- **Educational breakthrough context**: Built on 2020-2022 quantum LDPC breakthroughs with linear distance scaling
+
+### Quick Start
+```python
+# Navigate to the Code+ directory and run the interactive simulator
+cd Code+
+python realtime_ldpc_circuit.py
+
+# Or explore the real-time examples
+cd "Code+/Examples (real time)"
+python realtime_simulation.py
+```
+
+**Try it now**: Inject errors by clicking qubits, use 'Auto Decode' for continuous correction, and adjust the cavity cooperativity slider to see how gate fidelity affects the quantum error correction process!
+
+---
+
+![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
 ## Objective
 
