@@ -5,7 +5,7 @@
 
 Experience quantum error correction in action with our breakthrough interactive simulator! Click qubits to inject errors, watch syndrome extraction happen in real-time, and observe belief propagation decoding as it corrects quantum errors.
 
-![Interactive LDPC Simulator](Code+/Interactive%20Simulation.png)
+![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
 
 ### Key Features
 - **Real-time error injection**: Click any qubit to cycle through |0⟩ → |1⟩ → X → Z → Y error states
