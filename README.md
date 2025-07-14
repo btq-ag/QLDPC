@@ -1,34 +1,6 @@
 # Quantum Low-Density Parity-Check (LDPC) Codes
 ###### Revolutionary Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
 
-## 🚀 Interactive Real-Time LDPC Simulator
-
-Experience quantum error correction in action with our breakthrough interactive simulator! Click qubits to inject errors, watch syndrome extraction happen in real-time, and observe belief propagation decoding as it corrects quantum errors.
-
-![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
-
-### Key Features
-- **Real-time error injection**: Click any qubit to cycle through |0⟩ → |1⟩ → X → Z → Y error states
-- **Live syndrome monitoring**: Watch the syndrome vector s = He update instantly when errors occur
-- **Belief propagation visualization**: See the decoding algorithm converge in real-time
-- **Cavity QED integration**: Adjust cooperativity parameters and observe gate fidelity effects
-- **Educational breakthrough context**: Built on 2020-2022 quantum LDPC breakthroughs with linear distance scaling
-
-### Quick Start
-```python
-# Navigate to the Code+ directory and run the interactive simulator
-cd Code+
-python realtime_ldpc_circuit.py
-
-# Or explore the real-time examples
-cd "Code+/Examples (real time)"
-python realtime_simulation.py
-```
-
-**Try it now**: Inject errors by clicking qubits, use 'Auto Decode' for continuous correction, and adjust the cavity cooperativity slider to see how gate fidelity affects the quantum error correction process!
-
----
-
 ![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
 ## Objective
@@ -72,7 +44,103 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 
 ## Code Structure and Visualizations
 
-### 1. Cavity-Mediated Gates Analysis
+### 1. Interactive Real-Time LDPC Simulator
+Implements a comprehensive interactive quantum LDPC circuit simulation with real-time visualization and control. Users can inject errors into qubits by clicking, watch syndrome extraction in real-time, observe the belief propagation decoding process, adjust code parameters dynamically, and see cavity-mediated gates in action.
+
+```python
+class QuantumLDPCCode:
+    """
+    Quantum LDPC code implementation with breakthrough linear distance scaling
+    """
+    def __init__(self, n_data=21, n_checks=12):
+        self.n_data = n_data  # Number of data qubits
+        self.n_checks = n_checks  # Number of parity checks
+        self.distance = int(np.sqrt(n_data))  # Linear distance scaling
+        
+        # Generate sparse parity check matrix (LDPC property)
+        self.parity_matrix = self._generate_ldpc_matrix()
+        
+        # Qubit states: 0=|0⟩, 1=|1⟩, 2=error_X, 3=error_Z, 4=error_Y
+        self.qubit_states = np.zeros(n_data, dtype=int)
+        self.syndrome = np.zeros(n_checks, dtype=int)
+        
+        # Belief propagation variables
+        self.variable_beliefs = np.zeros((n_data, 2))  # [P(0), P(1)]
+        self.check_to_var_messages = np.zeros((n_checks, n_data))
+        self.var_to_check_messages = np.zeros((n_data, n_checks))
+        
+        # Cavity mediated gate parameters
+        self.cavity_cooperativity = DEFAULT_COOPERATIVITY
+        self.gate_fidelity = self._calculate_gate_fidelity()
+    
+    def inject_error(self, qubit_idx, error_type=2):
+        """Inject error into a specific qubit"""
+        if 0 <= qubit_idx < self.n_data:
+            self.qubit_states[qubit_idx] = error_type
+            self._update_syndrome()
+    
+    def belief_propagation_step(self):
+        """Perform one iteration of belief propagation decoding"""
+        # Check-to-variable messages
+        for check_idx in range(self.n_checks):
+            connected_vars = np.where(self.parity_matrix[check_idx] == 1)[0]
+            
+            for var_idx in connected_vars:
+                # Syndrome constraint-based message passing
+                if self.syndrome[check_idx] == 0:
+                    self.check_to_var_messages[check_idx, var_idx] = prob_even
+                else:
+                    self.check_to_var_messages[check_idx, var_idx] = prob_odd
+        
+        # Variable-to-check messages and beliefs update
+        for var_idx in range(self.n_data):
+            connected_checks = np.where(self.parity_matrix[:, var_idx] == 1)[0]
+            incoming_messages = self.check_to_var_messages[connected_checks, var_idx]
+            
+            # Update beliefs with message product
+            belief_0 = np.prod(incoming_messages) * 0.9  # Prior for |0⟩
+            belief_1 = np.prod(1 - incoming_messages) * 0.1  # Prior for |1⟩
+            norm = belief_0 + belief_1
+            if norm > 0:
+                self.variable_beliefs[var_idx, 0] = belief_0 / norm
+                self.variable_beliefs[var_idx, 1] = belief_1 / norm
+
+class LDPCCircuitAnimation:
+    """Interactive LDPC circuit visualization with real-time controls"""
+    
+    def on_mouse_click(self, event):
+        """Handle mouse clicks on qubits for error injection"""
+        if event.inaxes == self.ax_circuit:
+            for i in range(self.ldpc_code.n_data):
+                x, y = self.get_qubit_position(i)
+                if (event.xdata - x)**2 + (event.ydata - y)**2 < 0.3**2:
+                    # Cycle through error types: |0⟩ → |1⟩ → X → Z → Y
+                    current_error = self.ldpc_code.qubit_states[i]
+                    new_error = (current_error + 1) % 5
+                    self.ldpc_code.inject_error(i, new_error)
+                    self.ldpc_code.reset_decoding()
+                    break
+    
+    def draw_syndrome(self):
+        """Draw syndrome vector with real-time updates"""
+        syndrome_active = np.any(self.ldpc_code.syndrome == 1)
+        
+        for i, syndrome_bit in enumerate(self.ldpc_code.syndrome):
+            color = 'lightgreen' if syndrome_bit == 0 else 'red'
+            alpha = 0.6 if syndrome_bit == 0 else 0.9
+            rect = Rectangle((0, i), 1, 0.8, facecolor=color, alpha=alpha)
+            self.ax_syndrome.add_patch(rect)
+            
+        # Status indicator
+        status_text = "Errors Detected!" if syndrome_active else "No Errors"
+        status_color = 'red' if syndrome_active else 'green'
+        self.ax_syndrome.text(0.5, self.ldpc_code.n_checks, status_text, 
+                            color=status_color, fontweight='bold')
+```
+
+![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
+
+### 2. Cavity-Mediated Gates Analysis
 Analyzes the cooperativity requirements and tri-layer architecture for implementing non-local gates.
 
 ```python
@@ -92,7 +160,7 @@ def create_cavity_cooperativity_analysis():
 
 ![Tri-Layer Architecture](Plots/trilayer_architecture.png)
 
-### 2. Quantum Circuit Implementation
+### 3. Quantum Circuit Implementation
 Creates Qiskit-based visualizations of cavity-mediated CNOT gates, GHZ preparation, and syndrome extraction circuits.
 
 ```python
@@ -112,7 +180,7 @@ def create_cavity_cnot_circuit():
 
 ![Quantum Circuits](Plots/ghz_preparation_circuit.png)
 
-### 3. GHZ State Preparation and Analysis
+### 4. GHZ State Preparation and Analysis
 Demonstrates distributed GHZ state preparation protocols and fidelity scaling analysis.
 
 ```python
@@ -135,7 +203,7 @@ with fidelity: $F_{\text{GHZ}} = 1 - \frac{n-1}{2C} - (n-1)\epsilon_{\text{cavit
 
 ![GHZ Fidelity Analysis](Plots/ghz_fidelity_analysis.png)
 
-### 4. Syndrome Extraction and Error Correction
+### 5. Syndrome Extraction and Error Correction
 Implements the DiVincenzo-Aliferis syndrome extraction protocol for qLDPC codes.
 
 ```python
@@ -158,7 +226,7 @@ def create_syndrome_extraction_circuit():
 
 ![Syndrome Extraction](Plots/syndrome_extraction_circuit.png)
 
-### 5. LDPC Process Animations
+### 6. LDPC Process Animations
 Comprehensive animations demonstrating Tanner graph evolution, error correction dynamics, and threshold behavior.
 
 ```python
