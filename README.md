@@ -48,94 +48,34 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 Implements a comprehensive interactive quantum LDPC circuit simulation with real-time visualization and control. Users can inject errors into qubits by clicking, watch syndrome extraction in real-time, observe the belief propagation decoding process, adjust code parameters dynamically, and see cavity-mediated gates in action.
 
 ```python
-class QuantumLDPCCode:
+def create_interactive_ldpc_simulator():
     """
-    Quantum LDPC code implementation with breakthrough linear distance scaling
+    Launch real-time interactive LDPC circuit simulator
     """
-    def __init__(self, n_data=21, n_checks=12):
-        self.n_data = n_data  # Number of data qubits
-        self.n_checks = n_checks  # Number of parity checks
-        self.distance = int(np.sqrt(n_data))  # Linear distance scaling
-        
-        # Generate sparse parity check matrix (LDPC property)
-        self.parity_matrix = self._generate_ldpc_matrix()
-        
-        # Qubit states: 0=|0⟩, 1=|1⟩, 2=error_X, 3=error_Z, 4=error_Y
-        self.qubit_states = np.zeros(n_data, dtype=int)
-        self.syndrome = np.zeros(n_checks, dtype=int)
-        
-        # Belief propagation variables
-        self.variable_beliefs = np.zeros((n_data, 2))  # [P(0), P(1)]
-        self.check_to_var_messages = np.zeros((n_checks, n_data))
-        self.var_to_check_messages = np.zeros((n_data, n_checks))
-        
-        # Cavity mediated gate parameters
-        self.cavity_cooperativity = DEFAULT_COOPERATIVITY
-        self.gate_fidelity = self._calculate_gate_fidelity()
+    # Initialize quantum LDPC code with breakthrough scaling
+    ldpc_code = QuantumLDPCCode(n_data=21, n_checks=12)
+    ldpc_code.distance = int(np.sqrt(n_data))  # Linear distance scaling
     
-    def inject_error(self, qubit_idx, error_type=2):
-        """Inject error into a specific qubit"""
-        if 0 <= qubit_idx < self.n_data:
-            self.qubit_states[qubit_idx] = error_type
-            self._update_syndrome()
+    # Setup interactive animation with real-time controls
+    simulator = LDPCCircuitAnimation(ldpc_code)
+    simulator.setup_controls()  # Sliders, buttons, checkboxes
     
-    def belief_propagation_step(self):
-        """Perform one iteration of belief propagation decoding"""
-        # Check-to-variable messages
-        for check_idx in range(self.n_checks):
-            connected_vars = np.where(self.parity_matrix[check_idx] == 1)[0]
-            
-            for var_idx in connected_vars:
-                # Syndrome constraint-based message passing
-                if self.syndrome[check_idx] == 0:
-                    self.check_to_var_messages[check_idx, var_idx] = prob_even
-                else:
-                    self.check_to_var_messages[check_idx, var_idx] = prob_odd
-        
-        # Variable-to-check messages and beliefs update
-        for var_idx in range(self.n_data):
-            connected_checks = np.where(self.parity_matrix[:, var_idx] == 1)[0]
-            incoming_messages = self.check_to_var_messages[connected_checks, var_idx]
-            
-            # Update beliefs with message product
-            belief_0 = np.prod(incoming_messages) * 0.9  # Prior for |0⟩
-            belief_1 = np.prod(1 - incoming_messages) * 0.1  # Prior for |1⟩
-            norm = belief_0 + belief_1
-            if norm > 0:
-                self.variable_beliefs[var_idx, 0] = belief_0 / norm
-                self.variable_beliefs[var_idx, 1] = belief_1 / norm
-
-class LDPCCircuitAnimation:
-    """Interactive LDPC circuit visualization with real-time controls"""
+    # Mouse click handler for error injection
+    def on_click(event):
+        for i in range(ldpc_code.n_data):
+            if click_detected(i):
+                # Cycle through |0⟩ → |1⟩ → X → Z → Y
+                ldpc_code.inject_error(i, next_error_type)
+                ldpc_code._update_syndrome()  # Real-time syndrome update
     
-    def on_mouse_click(self, event):
-        """Handle mouse clicks on qubits for error injection"""
-        if event.inaxes == self.ax_circuit:
-            for i in range(self.ldpc_code.n_data):
-                x, y = self.get_qubit_position(i)
-                if (event.xdata - x)**2 + (event.ydata - y)**2 < 0.3**2:
-                    # Cycle through error types: |0⟩ → |1⟩ → X → Z → Y
-                    current_error = self.ldpc_code.qubit_states[i]
-                    new_error = (current_error + 1) % 5
-                    self.ldpc_code.inject_error(i, new_error)
-                    self.ldpc_code.reset_decoding()
-                    break
-    
-    def draw_syndrome(self):
-        """Draw syndrome vector with real-time updates"""
-        syndrome_active = np.any(self.ldpc_code.syndrome == 1)
-        
-        for i, syndrome_bit in enumerate(self.ldpc_code.syndrome):
-            color = 'lightgreen' if syndrome_bit == 0 else 'red'
-            alpha = 0.6 if syndrome_bit == 0 else 0.9
-            rect = Rectangle((0, i), 1, 0.8, facecolor=color, alpha=alpha)
-            self.ax_syndrome.add_patch(rect)
-            
-        # Status indicator
-        status_text = "Errors Detected!" if syndrome_active else "No Errors"
-        status_color = 'red' if syndrome_active else 'green'
-        self.ax_syndrome.text(0.5, self.ldpc_code.n_checks, status_text, 
-                            color=status_color, fontweight='bold')
+    # Belief propagation decoder with live visualization
+    def belief_propagation_step():
+        for check_idx in range(ldpc_code.n_checks):
+            # Message passing with syndrome constraints
+            if ldpc_code.syndrome[check_idx] == 0:
+                messages[check_idx] = prob_even
+            else:
+                messages[check_idx] = prob_odd
 ```
 
 ![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
