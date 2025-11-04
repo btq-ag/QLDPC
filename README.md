@@ -1,11 +1,11 @@
 # Quantum Low-Density Parity-Check (LDPC) Codes
-###### Revolutionary Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
+###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
 
 ![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
 ## Objective
 
-This repository implements visualizations and analysis of breakthrough quantum Low-Density Parity-Check (qLDPC) codes, focusing on the revolutionary 2020-2022 constructions that achieved asymptotically good codes with linear distance and constant rate. The implementation emphasizes **Brennan et al.'s cavity-mediated approach** for non-local gate implementation, representing a paradigm shift from surface codes toward scalable fault-tolerant quantum computing.
+This repository implements visualizations and analysis of breakthrough quantum Low-Density Parity-Check (qLDPC) codes, focusing on the 2020-2022 constructions that achieved asymptotically good codes with linear distance and constant rate. The implementation is based on [Brennen and Gopi's cavity-mediated approach](https://arxiv.org/abs/2409.05818) for non-local gate implementation, representing a paradigm shift from surface codes toward scalable fault-tolerant quantum computing.
 
 The core breakthrough addresses the fundamental challenge in quantum error correction: achieving **linear distance** $d = \Theta(n)$ and **constant rate** $R = \Theta(1)$ simultaneously, as described by the quantum Singleton bound:
 
@@ -44,7 +44,56 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 
 ## Code Structure and Visualizations
 
-### 1. Interactive Real-Time LDPC Simulator
+### 1. Interactive 3D Circuit Builder
+A comprehensive drag-and-drop 3D quantum circuit construction platform with isometric visualization and real-time LDPC code analysis. Users can build breakthrough quantum codes by placing components from a toolbox onto a grid-based canvas, with automatic validation of CSS constraints and live computation of code parameters including distance, rate, and cavity cooperativity requirements.
+
+```python
+def create_circuit_builder():
+    """
+    Launch interactive 3D quantum circuit builder platform
+    """
+    # Initialize 3D isometric renderer with cavity-aware visualization
+    builder = QuantumCircuitBuilder3D()
+    builder.setup_toolbox()  # LDPC components, cavity modes, stabilizers
+    builder.setup_canvas()   # Grid-based placement with snap-to constraints
+    
+    # Component library for breakthrough constructions
+    toolbox_components = {
+        'data_qubits': DataQubitComponent(),
+        'parity_checks': ParityCheckComponent(),
+        'cavity_modes': CavityModeComponent(),
+        'syndrome_extraction': SyndromeExtractionComponent(),
+        'lifted_product': LiftedProductGenerator(),
+        'quantum_tanner': QuantumTannerGenerator(),
+        'hypergraph_product': HypergraphProductGenerator()
+    }
+    
+    # Real-time code analysis during construction
+    def analyze_constructed_code():
+        H_X, H_Z = extract_stabilizer_matrices(placed_components)
+        distance = calculate_code_distance(H_X, H_Z)
+        rate = calculate_encoding_rate(H_X, H_Z)
+        cooperativity_req = estimate_cavity_requirements(placed_components)
+        
+        return CodeMetrics(distance=distance, rate=rate, 
+                          cooperativity=cooperativity_req)
+    
+    # Preset circuit templates for breakthrough constructions
+    preset_circuits = [
+        'error_correction_demo.json',      # Basic LDPC error correction
+        'syndrome_extraction.json',        # DiVincenzo-Aliferis protocol  
+        'surface_code_syndrome_cycle.json', # Surface code comparison
+        'quantum_tanner_linear_decoder.json', # Linear distance breakthrough
+        'hypergraph_product_ldpc.json'     # Tensor product construction
+    ]
+    
+    builder.load_presets(preset_circuits)
+    builder.run()  # Start interactive session
+```
+
+![Circuit Builder Demo](Plots/CircuitBuilderDemo.png)
+
+### 2. Interactive Real-Time LDPC Simulator
 Implements a comprehensive interactive quantum LDPC circuit simulation with real-time visualization and control. Users can inject errors into qubits by clicking, watch syndrome extraction in real-time, observe the belief propagation decoding process, adjust code parameters dynamically, and see cavity-mediated gates in action.
 
 ```python
@@ -80,7 +129,7 @@ def create_interactive_ldpc_simulator():
 
 ![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
 
-### 2. Quantum LDPC 3D Interactive Visualizations
+### 3. Quantum LDPC 3D Interactive Visualizations
 Comprehensive 3D interactive visualizations of quantum LDPC breakthrough constructions featuring revolutionary linear distance scaling. This implementation provides two complementary 3D exploration tools: an interactive Tanner graph topology visualizer with real-time syndrome propagation, and a threshold landscape analyzer showcasing the 2020-2022 quantum LDPC breakthroughs.
 
 ```python
@@ -111,7 +160,7 @@ def create_quantum_ldpc_3d_visualizations():
 
 ![Quantum LDPC 3D Demo](Plots/QLDPC_Demo.png)
 
-### 3. Cavity-Mediated Gates Analysis
+### 4. Cavity-Mediated Gates Analysis
 Analyzes the cooperativity requirements and tri-layer architecture for implementing non-local gates.
 
 ```python
@@ -131,7 +180,7 @@ def create_cavity_cooperativity_analysis():
 
 ![Tri-Layer Architecture](Plots/trilayer_architecture.png)
 
-### 4. Quantum Circuit Implementation
+### 5. Quantum Circuit Implementation
 Creates Qiskit-based visualizations of cavity-mediated CNOT gates, GHZ preparation, and syndrome extraction circuits.
 
 ```python
@@ -151,7 +200,7 @@ def create_cavity_cnot_circuit():
 
 ![Quantum Circuits](Plots/ghz_preparation_circuit.png)
 
-### 5. GHZ State Preparation and Analysis
+### 6. GHZ State Preparation and Analysis
 Demonstrates distributed GHZ state preparation protocols and fidelity scaling analysis.
 
 ```python
@@ -174,7 +223,7 @@ with fidelity: $F_{\text{GHZ}} = 1 - \frac{n-1}{2C} - (n-1)\epsilon_{\text{cavit
 
 ![GHZ Fidelity Analysis](Plots/ghz_fidelity_analysis.png)
 
-### 6. Syndrome Extraction and Error Correction
+### 7. Syndrome Extraction and Error Correction
 Implements the DiVincenzo-Aliferis syndrome extraction protocol for qLDPC codes.
 
 ```python
@@ -197,7 +246,7 @@ def create_syndrome_extraction_circuit():
 
 ![Syndrome Extraction](Plots/syndrome_extraction_circuit.png)
 
-### 7. LDPC Process Animations
+### 8. LDPC Process Animations
 Comprehensive animations demonstrating Tanner graph evolution, error correction dynamics, and threshold behavior.
 
 ```python
