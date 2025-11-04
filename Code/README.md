@@ -1,4 +1,4 @@
-# Quantum LDPC Simulation Suite
+# Quantum LDPC Simulation Hub
 ###### Comprehensive Implementation of Breakthrough Quantum Error Correction
 
 ## Overview
@@ -204,3 +204,4 @@ Each simulation category operates independently while sharing common visualizati
 **Code validity**: Built circuits automatically validate CSS constraints; red indicators highlight violations.
 
 **Threshold accuracy**: Simulated thresholds provide estimates; rigorous threshold determination requires extensive statistical analysis beyond these tools.
+
