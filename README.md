@@ -1,5 +1,5 @@
 # Quantum Low-Density Parity-Check (LDPC) Codes
-###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing based on [Brennen and Gopi's work](https://arxiv.org/abs/2409.05818)
+###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing based on [Brennen et al.](https://arxiv.org/abs/2409.05818).
 
 ![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
@@ -347,3 +347,4 @@ This implementation is based on:
 
 > [!NOTE]  
 > The visualizations demonstrate theoretical constructions and may require significant experimental advances to achieve the cavity cooperativities needed for practical implementation.
+
