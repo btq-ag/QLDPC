@@ -1,11 +1,11 @@
 # Quantum Low-Density Parity-Check (LDPC) Codes
-###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing
+###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing based on [Brennen and Gopi's work](https://arxiv.org/abs/2409.05818)
 
 ![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
 ## Objective
 
-This repository implements visualizations and analysis of breakthrough quantum Low-Density Parity-Check (qLDPC) codes, focusing on the 2020-2022 constructions that achieved asymptotically good codes with linear distance and constant rate. The implementation is based on [Brennen and Gopi's cavity-mediated approach](https://arxiv.org/abs/2409.05818) for non-local gate implementation, representing a paradigm shift from surface codes toward scalable fault-tolerant quantum computing.
+This repository implements visualizations and analysis of breakthrough quantum Low-Density Parity-Check (qLDPC) codes, focusing on the revolutionary 2020-2022 constructions that achieved asymptotically good codes with linear distance and constant rate. The implementation emphasizes non-local gate implementation, representing a paradigm shift from surface codes toward scalable fault-tolerant quantum computing.
 
 The core breakthrough addresses the fundamental challenge in quantum error correction: achieving **linear distance** $d = \Theta(n)$ and **constant rate** $R = \Theta(1)$ simultaneously, as described by the quantum Singleton bound:
 
@@ -56,17 +56,6 @@ def create_circuit_builder():
     builder = QuantumCircuitBuilder3D()
     builder.setup_toolbox()  # LDPC components, cavity modes, stabilizers
     builder.setup_canvas()   # Grid-based placement with snap-to constraints
-    
-    # Component library for breakthrough constructions
-    toolbox_components = {
-        'data_qubits': DataQubitComponent(),
-        'parity_checks': ParityCheckComponent(),
-        'cavity_modes': CavityModeComponent(),
-        'syndrome_extraction': SyndromeExtractionComponent(),
-        'lifted_product': LiftedProductGenerator(),
-        'quantum_tanner': QuantumTannerGenerator(),
-        'hypergraph_product': HypergraphProductGenerator()
-    }
     
     # Real-time code analysis during construction
     def analyze_constructed_code():
