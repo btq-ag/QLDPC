@@ -1,0 +1,38 @@
+{
+  "components": [
+    {
+      "type": "Data Qubit",
+      "position": [0, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {
+        "qubit_id": 0,
+        "description": "Simple data qubit"
+      }
+    },
+    {
+      "type": "X",
+      "position": [1, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.1, 0.3, 0.9],
+      "connections": [],
+      "properties": {
+        "gate_type": "Pauli_X"
+      }
+    },
+    {
+      "type": "Measure",
+      "position": [2, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.1, 0.1],
+      "connections": [],
+      "properties": {
+        "measurement_basis": "computational"
+      }
+    }
+  ]
+}
