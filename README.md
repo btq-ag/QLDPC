@@ -1,5 +1,5 @@
 # Quantum Low-Density Parity-Check (LDPC) Codes
-###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing based on [Brennen et al](https://arxiv.org/abs/2409.05818).
+###### Non-Local Resource Implementation for Fault-Tolerant Quantum Computing based on [Brennen and Gopi's work](https://arxiv.org/abs/2409.05818)
 
 ![Cavity Cooperativity Analysis](Plots/cavity_cooperativity.png)
 
@@ -44,8 +44,10 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 
 ## Code Structure and Visualizations
 
-### 1. Interactive 3D Circuit Builder
-A comprehensive drag-and-drop 3D quantum circuit construction platform with isometric visualization and real-time LDPC code analysis. Users can build breakthrough quantum codes by placing components from a toolbox onto a grid-based canvas, with automatic validation of CSS constraints and live computation of code parameters including distance, rate, and cavity cooperativity requirements.
+### 1. Live Circuit Builder
+A comprehensive drag-and-drop 3D quantum circuit construction platform with isometric visualization. Users can build quantum circuits by placing components from a toolbox onto a grid-based canvas.
+
+![Circuit Builder Overview](Plots/qldpc_overall.png)
 
 ```python
 def create_circuit_builder():
@@ -80,7 +82,25 @@ def create_circuit_builder():
     builder.run()  # Start interactive session
 ```
 
-![Circuit Builder Demo](Plots/CircuitBuilderDemo.png)
+#### Example Circuits
+
+![Example Circuit 1](Plots/example_circuit_1.png)
+![Example Circuit 2](Plots/example_circuit_2.png)
+![Example Circuit 3](Plots/example_circuit_3.png)
+
+#### Interactive Tutorial
+
+The circuit builder includes an advanced 7-step interactive tutorial that guides users through quantum computing concepts from basic qubits to LDPC codes. The tutorial covers qubit placement, single-qubit operators, two-qubit gates, repetition codes, surface codes, and LDPC sparse structure - with hands-on exercises at each step.
+
+![Tutorial Step 1](Plots/qldpc_tutorial_1.png)
+![Tutorial Step 2](Plots/qldpc_tutorial_2.png)
+![Tutorial Step 3](Plots/qldpc_tutorial_3.png)
+
+#### Component Legend
+
+The integrated component legend panel provides a visual reference for all available circuit elements, showing the 3D cube representation for each component type including single-qubit gates, two-qubit gates, and measurement operations.
+
+![Component Legend](Plots/qldpc_legend.png)
 
 ### 2. Interactive Real-Time LDPC Simulator
 Implements a comprehensive interactive quantum LDPC circuit simulation with real-time visualization and control. Users can inject errors into qubits by clicking, watch syndrome extraction in real-time, observe the belief propagation decoding process, adjust code parameters dynamically, and see cavity-mediated gates in action.
@@ -149,6 +169,7 @@ def create_quantum_ldpc_3d_visualizations():
 
 ![Quantum LDPC 3D Demo](Plots/QLDPC_Demo.png)
 
+<!--
 ### 4. Cavity-Mediated Gates Analysis
 Analyzes the cooperativity requirements and tri-layer architecture for implementing non-local gates.
 
@@ -168,6 +189,7 @@ def create_cavity_cooperativity_analysis():
 ```
 
 ![Tri-Layer Architecture](Plots/trilayer_architecture.png)
+-->
 
 ### 5. Quantum Circuit Implementation
 Creates Qiskit-based visualizations of cavity-mediated CNOT gates, GHZ preparation, and syndrome extraction circuits.
@@ -278,11 +300,13 @@ The error threshold analysis reveals the superior performance of qLDPC codes com
 
 This animation demonstrates the complete error correction cycle, showing how syndrome extraction, decoding, and correction operations work together to maintain logical information integrity.
 
+<!--
 ### 4. **Threshold Behavior Animation**:
 
 ![Threshold Behavior](Plots/ldpc_threshold_behavior_animation.gif)
 
 The threshold behavior animation illustrates the critical transition between error suppression (below threshold) and error proliferation (above threshold), demonstrating the fundamental principle of fault-tolerant quantum computing.
+-->
 
 ## Performance Analysis
 
@@ -293,6 +317,9 @@ The asymptotically good qLDPC codes offer dramatic improvements over surface cod
 | Code Type | Rate | Distance | Physical Qubits per Logical | Error Threshold |
 |-----------|------|----------|----------------------------|-----------------|
 | Surface Codes | $O(1/n)$ | $O(\sqrt{n})$ | $\sim 10^6$ | $\sim 10^{-3}$ |
+| Hypergraph Product | $O(1)$ | $O(\sqrt{n})$ | $\sim 10^4$ | $\sim 10^{-2}$ |
+| Lifted Product | $\Theta(1)$ | $\Theta(\sqrt{n}\log n)$ | $\sim 10^3$ | $\sim 10^{-2}$ |
+| Quantum Tanner | $\Theta(1)$ | $\Theta(n)$ | $\sim 10^3$ | $\sim 10^{-2}$ |
 | qLDPC Codes | $\Theta(1)$ | $\Theta(n)$ | $\sim 10^3$ | $\sim 10^{-2}$ |
 
 ### Cavity Implementation Requirements
@@ -303,11 +330,6 @@ The asymptotically good qLDPC codes offer dramatic improvements over surface cod
 - **Fidelity**: $F > 99\%$ for fault tolerance
 
 ## Key Breakthroughs Demonstrated
-
-### Mathematical Foundations
-- **Panteleev-Kalachev Lifted Products**: First explicit asymptotically good qLDPC construction
-- **Quantum Tanner Codes**: Linear distance breakthrough using expander graphs
-- **Hypergraph Product Codes**: Systematic construction framework
 
 ### Experimental Implementation
 - **Cavity QED Solutions**: Practical non-local gate implementation
@@ -347,5 +369,3 @@ This implementation is based on:
 
 > [!NOTE]  
 > The visualizations demonstrate theoretical constructions and may require significant experimental advances to achieve the cavity cooperativities needed for practical implementation.
-
-
