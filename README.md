@@ -45,7 +45,7 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 ## Code Structure and Visualizations
 
 ### 1. Live Circuit Builder
-This module implements a real-time interactive quantum circuit builder using a custom dark-themed GUI. The application provides a 2.5D isometric perspective, allowing users to drag and drop 3D quantum circuit components—such as Data Qubits, Parity Checks, and CNOT gates—onto a grid-based canvas. It features a real-time quantum computation backend that calculates syndromes and simulates error correction as components are placed. It is optimized for QLDPC codes, taking from Qiskit, PennyLane, as well as homebrewed C++ optimizations.
+This module implements a real-time interactive quantum circuit builder using a custom dark-themed GUI. The application provides a 2.5D isometric perspective, allowing users to drag and drop 3D quantum circuit components (such as Data Qubits, Parity Checks, and CNOT gates) onto a grid-based canvas. It features a real-time quantum computation backend that calculates syndromes and simulates error correction as components are placed. It is optimized for QLDPC codes, taking from Qiskit, PennyLane, as well as homebrewed C++ optimizations.
 
 
 
@@ -351,5 +351,6 @@ This implementation is based on:
 
 > [!NOTE]  
 > The visualizations demonstrate theoretical constructions and may require significant experimental advances to achieve the cavity cooperativities needed for practical implementation.
+
 
 
