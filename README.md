@@ -47,7 +47,7 @@ enabling fault-tolerant thresholds around $p_{\text{th}} \approx 10^{-2}$.
 ### 1. Live Circuit Builder
 A comprehensive drag-and-drop 3D quantum circuit construction platform with isometric visualization. Users can build quantum circuits by placing components from a toolbox onto a grid-based canvas.
 
-![Circuit Builder Overview](Plots/qldpc_overall.png)
+
 
 ```python
 def create_circuit_builder():
@@ -82,11 +82,12 @@ def create_circuit_builder():
     builder.run()  # Start interactive session
 ```
 
+![Circuit Builder Overview](Plots/qldpc_overall.png)
+
 #### Example Circuits
 
 ![Example Circuit 1](Plots/example_circuit_1.png)
 ![Example Circuit 2](Plots/example_circuit_2.png)
-![Example Circuit 3](Plots/example_circuit_3.png)
 
 #### Interactive Tutorial
 
@@ -191,27 +192,8 @@ def create_cavity_cooperativity_analysis():
 ![Tri-Layer Architecture](Plots/trilayer_architecture.png)
 -->
 
-### 5. Quantum Circuit Implementation
-Creates Qiskit-based visualizations of cavity-mediated CNOT gates, GHZ preparation, and syndrome extraction circuits.
 
-```python
-def create_cavity_cnot_circuit():
-    """
-    Generate cavity-mediated CNOT gate circuit
-    """
-    qc = QuantumCircuit(4, 2)  # 2 data qubits + 2 cavity modes
-    
-    # Cavity-mediated CNOT sequence
-    qc.h(2)  # Prepare cavity in |+⟩
-    qc.cx(0, 2)  # Control couples to cavity
-    qc.cx(2, 1)  # Cavity couples to target
-    qc.cx(0, 2)  # Decouple control
-    qc.h(2)  # Return cavity to |0⟩
-```
-
-![Quantum Circuits](Plots/ghz_preparation_circuit.png)
-
-### 6. GHZ State Preparation and Analysis
+### 4. GHZ State Preparation and Analysis
 Demonstrates distributed GHZ state preparation protocols and fidelity scaling analysis.
 
 ```python
@@ -234,7 +216,7 @@ with fidelity: $F_{\text{GHZ}} = 1 - \frac{n-1}{2C} - (n-1)\epsilon_{\text{cavit
 
 ![GHZ Fidelity Analysis](Plots/ghz_fidelity_analysis.png)
 
-### 7. Syndrome Extraction and Error Correction
+### 5. Syndrome Extraction and Error Correction
 Implements the DiVincenzo-Aliferis syndrome extraction protocol for qLDPC codes.
 
 ```python
@@ -257,7 +239,7 @@ def create_syndrome_extraction_circuit():
 
 ![Syndrome Extraction](Plots/syndrome_extraction_circuit.png)
 
-### 8. LDPC Process Animations
+### 7. LDPC Process Animations
 Comprehensive animations demonstrating Tanner graph evolution, error correction dynamics, and threshold behavior.
 
 ```python
@@ -369,3 +351,4 @@ This implementation is based on:
 
 > [!NOTE]  
 > The visualizations demonstrate theoretical constructions and may require significant experimental advances to achieve the cavity cooperativities needed for practical implementation.
+
