@@ -1,0 +1,21 @@
+{
+  "name": "[ERROR] 3-Qubit Bit Flip Code with X Error",
+  "description": "3-qubit repetition code with an X error - click Correct to fix!",
+  "grid_size": 35,
+  "components": [
+    {"type": "Data Qubit", "position": [-8, -3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q0"}},
+    {"type": "Data Qubit", "position": [-8, 0, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q1"}},
+    {"type": "Data Qubit", "position": [-8, 3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q2"}},
+    {"type": "CNOT", "position": [-5, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 0}},
+    {"type": "CNOT", "position": [-3, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 3}},
+    {"type": "X Err", "position": [0, 0, 0], "color": [0.1, 0.1, 0.1], "properties": {"label": "X ERROR!"}},
+    {"type": "Ancilla Qubit", "position": [-8, -6, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "syndrome 0"}},
+    {"type": "Ancilla Qubit", "position": [-8, 6, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "syndrome 1"}},
+    {"type": "CNOT", "position": [3, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": -6}},
+    {"type": "CNOT", "position": [4, 0, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": 0, "target": -6}},
+    {"type": "CNOT", "position": [3, 0, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": 0, "target": 6}},
+    {"type": "CNOT", "position": [4, 3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": 3, "target": 6}},
+    {"type": "Measure", "position": [7, -6, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [7, 6, 0], "color": [0.9, 0.1, 0.1], "properties": {}}
+  ]
+}

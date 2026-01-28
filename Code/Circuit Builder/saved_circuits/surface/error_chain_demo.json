@@ -1,0 +1,17 @@
+{
+    "name": "Error Chain Demo",
+    "description": "Demonstrates X, Z, and Y error markers on data qubits in the rotated lattice",
+    "view_mode": "surface_2d",
+    "components": [
+        {"type": "SURFACE_X_STABILIZER", "position": [4, 4, 0]},
+        {"type": "SURFACE_Z_STABILIZER", "position": [2, 4, 0]},
+        {"type": "SURFACE_Z_STABILIZER", "position": [6, 4, 0]},
+        {"type": "SURFACE_DATA", "position": [3, 3, 0]},
+        {"type": "SURFACE_DATA", "position": [5, 3, 0]},
+        {"type": "SURFACE_DATA", "position": [3, 5, 0]},
+        {"type": "SURFACE_DATA", "position": [5, 5, 0]},
+        {"type": "SURFACE_X_ERROR", "position": [3, 3, 0], "properties": {"error_type": "bit_flip"}},
+        {"type": "SURFACE_Z_ERROR", "position": [5, 5, 0], "properties": {"error_type": "phase_flip"}},
+        {"type": "SURFACE_Y_ERROR", "position": [3, 5, 0], "properties": {"error_type": "combined"}}
+    ]
+}

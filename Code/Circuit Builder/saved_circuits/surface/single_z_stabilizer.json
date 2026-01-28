@@ -1,0 +1,12 @@
+{
+    "name": "Single Z-Stabilizer",
+    "description": "A single Z-stabilizer with its 4 neighboring data qubits",
+    "view_mode": "surface_2d",
+    "components": [
+        {"type": "SURFACE_Z_STABILIZER", "position": [4, 4, 0]},
+        {"type": "SURFACE_DATA", "position": [3, 3, 0]},
+        {"type": "SURFACE_DATA", "position": [5, 3, 0]},
+        {"type": "SURFACE_DATA", "position": [3, 5, 0]},
+        {"type": "SURFACE_DATA", "position": [5, 5, 0]}
+    ]
+}

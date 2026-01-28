@@ -1,0 +1,96 @@
+{
+  "name": "LDPC Sparse Structure",
+  "description": "Demonstrates the sparse connectivity of LDPC codes - each check involves only a few qubits",
+  "components": [
+    {
+      "type": "Data Qubit",
+      "position": [0, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 0}
+    },
+    {
+      "type": "Data Qubit",
+      "position": [0, 2, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 1}
+    },
+    {
+      "type": "Data Qubit",
+      "position": [0, 4, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 2}
+    },
+    {
+      "type": "Data Qubit",
+      "position": [0, 6, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 3}
+    },
+    {
+      "type": "Parity Check",
+      "position": [1, 1, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [0, 1],
+      "properties": {"check_id": 0, "label": "Sparse check: q0, q1"}
+    },
+    {
+      "type": "Parity Check",
+      "position": [1, 3, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [1, 2],
+      "properties": {"check_id": 1, "label": "Sparse check: q1, q2"}
+    },
+    {
+      "type": "Parity Check",
+      "position": [1, 5, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [2, 3],
+      "properties": {"check_id": 2, "label": "Sparse check: q2, q3"}
+    },
+    {
+      "type": "Parity Check",
+      "position": [2, 1, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [],
+      "properties": {"syndrome_id": 0}
+    },
+    {
+      "type": "Parity Check",
+      "position": [2, 3, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [],
+      "properties": {"syndrome_id": 1}
+    },
+    {
+      "type": "Parity Check",
+      "position": [2, 5, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [],
+      "properties": {"syndrome_id": 2}
+    }
+  ]
+}

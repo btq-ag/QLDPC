@@ -1,0 +1,19 @@
+{
+  "name": "[ERROR] Phase Flip Code with Z Error",
+  "description": "3-qubit phase flip code with a Z error - click Correct to fix!",
+  "grid_size": 35,
+  "components": [
+    {"type": "Data Qubit", "position": [-8, -3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q0"}},
+    {"type": "Data Qubit", "position": [-8, 0, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q1"}},
+    {"type": "Data Qubit", "position": [-8, 3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q2"}},
+    {"type": "H", "position": [-6, -3, 0], "color": [1.0, 0.85, 0.2], "properties": {}},
+    {"type": "H", "position": [-6, 0, 0], "color": [1.0, 0.85, 0.2], "properties": {}},
+    {"type": "H", "position": [-6, 3, 0], "color": [1.0, 0.85, 0.2], "properties": {}},
+    {"type": "CNOT", "position": [-4, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 0}},
+    {"type": "CNOT", "position": [-2, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 3}},
+    {"type": "Z Err", "position": [0, 3, 0], "color": [0.1, 0.1, 0.1], "properties": {"label": "Z ERROR!"}},
+    {"type": "Measure", "position": [6, -3, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [6, 0, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [6, 3, 0], "color": [0.9, 0.1, 0.1], "properties": {}}
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "3-Qubit Repetition Code",
+  "description": "The simplest quantum error correction - 3-qubit bit-flip code with CNOT encoding and parity checks",
+  "components": [
+    {
+      "type": "Data Qubit",
+      "position": [0, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 0, "label": "q0 - original"}
+    },
+    {
+      "type": "Data Qubit",
+      "position": [0, 1, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 1, "label": "q1 - copy target"}
+    },
+    {
+      "type": "Data Qubit",
+      "position": [0, 2, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.2, 0.9, 0.3],
+      "connections": [],
+      "properties": {"qubit_id": 2, "label": "q2 - copy target"}
+    },
+    {
+      "type": "CNOT",
+      "position": [1, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 2.0, 1.0],
+      "color": [0.8, 0.2, 0.6],
+      "connections": [0, 1],
+      "properties": {"control": 0, "target": 1, "label": "Copy q0 to q1"}
+    },
+    {
+      "type": "CNOT",
+      "position": [2, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 3.0, 1.0],
+      "color": [0.8, 0.2, 0.6],
+      "connections": [0, 2],
+      "properties": {"control": 0, "target": 2, "label": "Copy q0 to q2"}
+    },
+    {
+      "type": "Parity Check",
+      "position": [3, 0, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [0, 1],
+      "properties": {"check_id": 0, "label": "Check q0-q1 parity"}
+    },
+    {
+      "type": "Parity Check",
+      "position": [3, 1, 0],
+      "rotation": 0.0,
+      "size": [1.0, 1.0, 1.0],
+      "color": [0.9, 0.5, 0.1],
+      "connections": [1, 2],
+      "properties": {"check_id": 1, "label": "Check q1-q2 parity"}
+    }
+  ]
+}

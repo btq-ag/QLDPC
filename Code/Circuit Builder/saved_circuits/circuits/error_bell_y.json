@@ -1,0 +1,14 @@
+{
+  "name": "[ERROR] Bell State with Y Error",
+  "description": "Bell pair with Y error (combined X and Z) - click Correct to fix!",
+  "grid_size": 35,
+  "components": [
+    {"type": "Data Qubit", "position": [-7, -2, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q0"}},
+    {"type": "Data Qubit", "position": [-7, 2, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q1"}},
+    {"type": "H", "position": [-4, -2, 0], "color": [1.0, 0.85, 0.2], "properties": {"label": "Superposition"}},
+    {"type": "CNOT", "position": [-1, -2, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -2, "target": 2, "label": "Entangle"}},
+    {"type": "Y Err", "position": [2, -2, 0], "color": [0.1, 0.1, 0.1], "properties": {"label": "Y ERROR!"}},
+    {"type": "Measure", "position": [6, -2, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [6, 2, 0], "color": [0.9, 0.1, 0.1], "properties": {}}
+  ]
+}

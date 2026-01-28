@@ -1,0 +1,18 @@
+{
+  "name": "[ERROR] GHZ State with Multiple Errors",
+  "description": "3-qubit GHZ with X and Z errors on different qubits - click Correct!",
+  "grid_size": 35,
+  "components": [
+    {"type": "Data Qubit", "position": [-8, -3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q0"}},
+    {"type": "Data Qubit", "position": [-8, 0, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q1"}},
+    {"type": "Data Qubit", "position": [-8, 3, 0], "color": [0.2, 0.9, 0.3], "properties": {"label": "q2"}},
+    {"type": "H", "position": [-5, -3, 0], "color": [1.0, 0.85, 0.2], "properties": {}},
+    {"type": "CNOT", "position": [-2, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 0}},
+    {"type": "CNOT", "position": [0, -3, 0], "color": [0.8, 0.2, 0.6], "properties": {"control": -3, "target": 3}},
+    {"type": "X Err", "position": [3, 0, 0], "color": [0.1, 0.1, 0.1], "properties": {"label": "X ERROR"}},
+    {"type": "Z Err", "position": [3, 3, 0], "color": [0.1, 0.1, 0.1], "properties": {"label": "Z ERROR"}},
+    {"type": "Measure", "position": [7, -3, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [7, 0, 0], "color": [0.9, 0.1, 0.1], "properties": {}},
+    {"type": "Measure", "position": [7, 3, 0], "color": [0.9, 0.1, 0.1], "properties": {}}
+  ]
+}

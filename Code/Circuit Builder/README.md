@@ -197,38 +197,105 @@ Gate primitives include Mølmer–Sørensen multi-qubit gates ($e^{i\theta J_z^2
 #### Advanced LDPC Elements
 Other elements include sparse-connectivity nodes to enforce constant-degree LDPC structure, cavity-based distance-amplifier components, rate-optimizers that trade structure for encoding efficiency, and threshold-analyzer utilities for real-time fault-tolerance estimation.
 
-## Technical Implementation & Breakthrough Architecture
+## Technical Implementation & Architecture
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Quantum Circuit Builder 3D                            │
+│                              (Main Application)                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐      │
+│  │   GUI Layer      │    │  Business Logic  │    │   Data Layer     │      │
+│  │   (tkinter)      │    │                  │    │                  │      │
+│  ├──────────────────┤    ├──────────────────┤    ├──────────────────┤      │
+│  │ • Canvas         │◄──►│ • CircuitBuilder │◄──►│ • Component3D    │      │
+│  │ • Toolbox        │    │ • CommandHistory │    │ • ComponentType  │      │
+│  │ • Controls       │    │ • ErrorContext   │    │ • ViewMode       │      │
+│  │ • StatusBar      │    │                  │    │ • JSON Files     │      │
+│  └──────────────────┘    └──────────────────┘    └──────────────────┘      │
+│           │                      │                       │                  │
+│           ▼                      ▼                       ▼                  │
+│  ┌──────────────────────────────────────────────────────────────────┐      │
+│  │                      Rendering Engine                             │      │
+│  ├──────────────────────────────────────────────────────────────────┤      │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐      │      │
+│  │  │ Isometric 3D   │  │ Surface Code   │  │ LDPC Modes     │      │      │
+│  │  │ Renderer       │  │ 2D Renderer    │  │ (Tanner/Phys)  │      │      │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘      │      │
+│  └──────────────────────────────────────────────────────────────────┘      │
+│           │                                                                 │
+│           ▼                                                                 │
+│  ┌──────────────────────────────────────────────────────────────────┐      │
+│  │                   Quantum Backend                                 │      │
+│  ├──────────────────────────────────────────────────────────────────┤      │
+│  │  ┌────────────────────────┐  ┌────────────────────────┐          │      │
+│  │  │ QuantumLDPCProcessor   │  │ Qiskit Integration     │          │      │
+│  │  │ • Syndrome Calculation │  │ • State Evolution      │          │      │
+│  │  │ • Error Correction     │  │ • Circuit Simulation   │          │      │
+│  │  │ • BP Decoding          │  │ • QASM Export          │          │      │
+│  │  └────────────────────────┘  └────────────────────────┘          │      │
+│  └──────────────────────────────────────────────────────────────────┘      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+  User Input → GUI Events → Command Pattern → State Update → Render → Display
+                                   ↓
+                            CommandHistory (Undo/Redo)
+```
 
 ### Core Class Hierarchy
 ```
-QuantumCircuitBuilder3D (Main Controller)
-├── CavityIsometricRenderer (3D Cavity Visualization)  
-├── BreakthroughLDPCProcessor (Quantum Code Analysis)
-├── CavityComponent3D (Non-Local Gate Elements)
-└── LDPCCodeType (Breakthrough Construction Types)
+CircuitBuilder3D (Main Controller)
+├── IsometricRenderer (3D Visualization)
+├── QuantumLDPCProcessor (Quantum Code Analysis)
+├── Component3D (Circuit Elements)
+├── CommandHistory (Undo/Redo System)
+│   ├── PlaceComponentCommand
+│   ├── DeleteComponentCommand
+│   └── MoveComponentCommand
+├── TutorialScreen (Interactive Tutorials)
+├── SurfaceCodeTutorialScreen
+└── ErrorContext (User-Friendly Errors)
+
+ViewMode (Enum):
+├── ISOMETRIC_3D (Default circuit view)
+├── SURFACE_CODE_2D (Surface code lattice)
+├── LDPC_TANNER (Tanner graph visualization)
+└── LDPC_PHYSICAL (Physical layout view)
 ```
 
-### Revolutionary Classes
+### Key Classes
 
-#### `QuantumCircuitBuilder3D`
-Main application implementing cavity-mediated circuit construction with real-time breakthrough code analysis.
+#### `CircuitBuilder3D`
+Main application implementing quantum circuit construction with real-time analysis.
 
-#### `CavityIsometricRenderer`  
-Advanced 2.5D projection system optimized for cavity-qubit coupling visualization with cooperativity-dependent rendering.
+#### `IsometricRenderer`  
+2.5D projection system for circuit visualization with depth sorting.
 
-#### `BreakthroughLDPCProcessor`
+#### `QuantumLDPCProcessor`
 Quantum computation backend implementing:
-- **Panteleev-Kalachev Analysis**: Lifted product code parameter calculation
-- **Quantum Tanner Metrics**: Expander-based distance and rate computation  
-- **Cavity Error Modeling**: Realistic noise simulation with cooperativity dependence
+- **Syndrome Calculation**: Extract error syndromes from stabilizer measurements
+- **Error Correction**: Belief propagation and OSD decoding
+- **Code Analysis**: Rate, distance, and threshold estimation
 
-#### `CavityComponent3D`
-Enhanced component structure supporting cavity-mediated non-local gates with:
-- Real-time cooperativity calculation: $C = g^2/(\kappa\gamma)$
-- Fidelity estimation: $F = 1 - 1/C - \epsilon_{\text{deph}}$  
-- Multi-qubit coupling topology for breakthrough stabilizer weights
+#### `Component3D`
+Dataclass representing circuit elements with:
+- Position, rotation, and size
+- Component type and color
+- Connection topology
+- Custom properties dictionary
 
-### Advanced Rendering Engine
+#### `CommandHistory`
+Undo/Redo system using Command pattern:
+- Tracks all circuit modifications
+- Supports Ctrl+Z / Ctrl+Y shortcuts
+- Configurable history size
+
+### Rendering Pipeline
 The cavity-aware isometric renderer converts 3D cavity-qubit coordinates to 2D visualization using enhanced projection:
 ```python
 def render_cavity_coupling(cavity_pos, qubit_positions, cooperativity):
@@ -309,11 +376,41 @@ def cavity_enhanced_belief_propagation(syndrome, H, cooperativity_map):
 
 ```
 Circuit Builder/
-├── quantum_circuit_builder_3d.py    # Main application
+├── quantum_circuit_builder_3d.py    # Main application (~7000 lines)
 ├── README.md                         # This documentation
+├── IMPROVEMENTS.md                   # Development progress tracking
+├── requirements.txt                  # Python dependencies
+├── pyproject.toml                    # Package configuration
+├── quantum_circuit_builder/          # Modular package components
+│   ├── __init__.py                   # Package exports
+│   ├── config.py                     # Configuration dataclasses
+│   ├── components.py                 # Component types and dataclasses
+│   ├── processor.py                  # QuantumLDPCProcessor class
+│   ├── tutorials.py                  # Tutorial base class
+│   ├── renderers/
+│   │   └── isometric.py              # IsometricRenderer class
+│   └── ui/
+│       └── history.py                # Undo/Redo command system
 └── saved_circuits/                   # Directory for saved circuit files
-    ├── example_ldpc_code.json       # Example LDPC circuit
-    └── syndrome_extraction.json      # Syndrome measurement example
+    ├── circuits/                     # General circuit examples
+    │   ├── hypergraph_product_ldpc.json
+    │   └── syndrome_extraction.json
+    └── surface/                      # Surface code examples
+        ├── distance_3_patch.json
+        └── syndrome_correction_demo.json
+```
+
+## Installation
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Or install as package
+pip install -e .
+
+# Run the application
+python quantum_circuit_builder_3d.py
 ```
 
 ## Examples & Use Cases
@@ -342,13 +439,46 @@ Circuit Builder/
 | Shortcut | Action |
 |----------|--------|
 | `Left Click` | Place component / Select component |
-| `Right Click` | Component context menu |
-| `Drag` | Move component |
+| `Right Click` | Component context menu (rotate, delete, properties) |
+| `Middle Drag` | Pan the grid view |
 | `Delete` | Remove selected component |
-| `Ctrl+C` | Copy selected component |
-| `Ctrl+V` | Paste component |
-| `Ctrl+S` | Save circuit |
-| `Ctrl+O` | Load circuit |
+| `Ctrl+C` | Copy selected component to clipboard |
+| `Ctrl+V` | Paste component from clipboard |
+| `Ctrl+Shift+C` | Copy entire circuit to clipboard |
+| `Ctrl+Z` | Undo last action |
+| `Ctrl+Y` | Redo last action |
+| `V` | Toggle Surface Code mode |
+| `B` | Cycle LDPC modes (Tanner → Physical → Circuit) |
+| `T` | Open interactive tutorial |
+| `?` | Show keyboard shortcuts dialog |
+| `+` / `=` | Zoom in |
+| `-` | Zoom out |
+| `0` | Reset zoom to 100% |
+
+## Features (v2.0)
+
+### Core Features
+- **3D Isometric Circuit Building**: Drag-and-drop quantum components
+- **Multiple View Modes**: Circuit, Surface Code 2D, LDPC Tanner, LDPC Physical
+- **Undo/Redo**: Full command history with Ctrl+Z/Ctrl+Y
+- **Clipboard Support**: Copy/paste components between sessions
+- **Circuit Validation**: Check for orphaned gates, missing connections
+- **OpenQASM Export**: Export circuits to standard format
+- **JSON Schema Validation**: Automatic validation of circuit files
+- **Interactive Tutorials**: Step-by-step learning with live demos
+- **Quick Reference**: In-app guide to components and controls
+
+### UI Improvements
+- **Grid Zoom**: 50%-200% zoom with +/- keys or buttons
+- **Enhanced Mode Indicator**: Shows mode, component count, zoom level
+- **Help Section**: Visible buttons for Tutorial, Shortcuts, Quick Reference
+- **User-Friendly Errors**: Contextual error messages with suggestions
+- **Keyboard Shortcuts Dialog**: Full shortcut reference
+
+### Performance Optimizations
+- **Cached Color Blending**: For LDPC arc drawing
+- **Adaptive Bezier Segments**: Based on arc distance
+- **Early Exit**: Skip drawing very short arcs
 
 ## Troubleshooting
 
@@ -370,7 +500,20 @@ Circuit Builder/
 
 **"Circuit build failed"**: Invalid component configuration. Check component types and connections.
 
+**"Invalid JSON Format"**: Circuit file is corrupted or not valid JSON. Check file contents.
+
+**"Missing required fields"**: Circuit JSON is missing 'type' or 'position' fields. Use schema-valid format.
+
 ## Advanced Features
+
+### Circuit Validation Panel
+Click "Validate Circuit" to check for:
+- Empty circuit or missing qubits
+- Gates without corresponding qubit lanes
+- Two-qubit gates missing connections
+- Measurements placed before later gates
+- Circuit depth analysis
+- Unconnected syndrome extractors
 
 ### Custom Component Properties
 Right-click any component and select "Properties" to view:
@@ -385,6 +528,8 @@ Save circuits as JSON files containing:
 - Rotation and size information
 - Connection mappings
 - Custom properties
+
+Export to OpenQASM 2.0 format with preview dialog.
 
 ### Real-Time Analysis
 Status panel provides live feedback on:
@@ -404,10 +549,21 @@ This application follows the project's coding standards:
 
 ## Version History
 
+- **v2.0**: Major feature update (2024)
+  - Undo/Redo system (Ctrl+Z/Ctrl+Y)
+  - Clipboard support for components
+  - Circuit validation panel
+  - JSON schema validation
+  - OpenQASM export
+  - Grid zoom functionality
+  - Enhanced help system
+  - User-friendly error messages
+  - Performance optimizations
+  
 - **v1.0**: Initial release with core 3D circuit building functionality
-- Real-time syndrome calculation and error correction
-- Professional dark theme GUI with tkinter
-- Comprehensive component library for LDPC circuits
+  - Real-time syndrome calculation and error correction
+  - Professional dark theme GUI with tkinter
+  - Comprehensive component library for LDPC circuits
 
 ---
 

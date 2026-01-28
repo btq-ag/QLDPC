@@ -82,26 +82,42 @@ def create_circuit_builder():
     builder.run()  # Start interactive session
 ```
 
-![Circuit Builder Overview](Plots/qldpc_overall.png)
+![Circuit Builder Overview](Plots/New/MainTutorial.png)
 
 #### Example Circuits
 
-![Example Circuit 1](Plots/example_circuit_1.png)
-![Example Circuit 2](Plots/example_circuit_2.png)
+The circuit builder includes a library of pre-built quantum circuits demonstrating various error correction schemes and quantum algorithms. Users can load circuits including quantum teleportation, GHZ state preparation, Grover's algorithm, Deutsch-Jozsa, and multiple LDPC constructions (hypergraph product, quantum Tanner codes, syndrome extraction). Each circuit can be loaded, modified, and analyzed in real-time through the File menu.
+
+![Loading Example Circuits](Plots/New/Circuits.gif)
 
 #### Interactive Tutorial
 
-The circuit builder includes an advanced 7-step interactive tutorial that guides users through quantum computing concepts from basic qubits to LDPC codes. The tutorial covers qubit placement, single-qubit operators, two-qubit gates, repetition codes, surface codes, and LDPC sparse structure - with hands-on exercises at each step.
+The circuit builder includes a comprehensive 10-step interactive tutorial system accessible via the Help menu. The basic tutorial guides users through fundamental quantum computing concepts: qubit placement, single-qubit gates (X, Y, Z, H, S, T), two-qubit gates (CNOT, CZ), controlled gate creation, and the three-qubit repetition code. Each step includes live demonstrations that place example components on the grid.
 
 ![Tutorial Step 1](Plots/qldpc_tutorial_1.png)
-![Tutorial Step 2](Plots/qldpc_tutorial_2.png)
 ![Tutorial Step 3](Plots/qldpc_tutorial_3.png)
 
-#### Component Legend
+The advanced Surface Code Tutorial provides deeper coverage of error correction: surface code lattice structure with X/Z stabilizers, error injection and syndrome measurement, LDPC mode with Tanner graph visualization, and comparison between surface codes and qLDPC constructions.
 
-The integrated component legend panel provides a visual reference for all available circuit elements, showing the 3D cube representation for each component type including single-qubit gates, two-qubit gates, and measurement operations.
+![Advanced Tutorial](Plots/New/AdvancedTutorial.gif)
 
-![Component Legend](Plots/qldpc_legend.png)
+#### Surface Code Mode
+
+Press `V` to toggle into Surface Code Mode, which renders a 2D top-down lattice view optimized for topological code construction. In this mode, burgundy squares represent X-stabilizers (plaquette operators) and purple squares represent Z-stabilizers (vertex operators). Data qubits are placed on edges between stabilizers. The mode supports error injection (X, Z, Y errors) with visual syndrome highlighting, allowing users to observe how errors propagate through the stabilizer structure.
+
+![Surface Code Mode](Plots/New/Surface.gif)
+
+#### QLDPC Mode
+
+Press `B` to cycle through LDPC visualization modes: Tanner graph view and physical layout view. The Tanner graph mode displays the bipartite graph structure with data qubits (teal), X-check nodes (coral), and Z-check nodes (gold) connected by edges representing the parity-check matrix. The physical layout mode shows the tri-layer architecture with X-ancilla, data qubit, and Z-ancilla rows connected via a cavity bus for non-local gate implementation. Arc connections visualize the sparse LDPC connectivity pattern.
+
+![QLDPC Mode](Plots/New/QLDPC.gif)
+
+#### Resources
+
+The Help menu provides quick access to essential references: a keyboard shortcuts dialog (`?`) listing all hotkeys for navigation, component manipulation, and mode switching; a Quick Reference guide with component descriptions and circuit building tips; and a visual Component Legend showing the 3D isometric representation of all available gates, qubits, and stabilizer elements with their corresponding colors and symbols.
+
+![Resources Panel](Plots/New/Resources.gif)
 
 ### 2. Interactive Real-Time LDPC Simulator
 Implements a comprehensive interactive quantum LDPC circuit simulation with real-time visualization and control. Users can inject errors into qubits by clicking, watch syndrome extraction in real-time, observe the belief propagation decoding process, adjust code parameters dynamically, and see cavity-mediated gates in action.
@@ -139,61 +155,7 @@ def create_interactive_ldpc_simulator():
 
 ![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
 
-### 3. Quantum LDPC 3D Interactive Visualizations
-Comprehensive 3D interactive visualizations of quantum LDPC breakthrough constructions featuring revolutionary linear distance scaling. This implementation provides two complementary 3D exploration tools: an interactive Tanner graph topology visualizer with real-time syndrome propagation, and a threshold landscape analyzer showcasing the 2020-2022 quantum LDPC breakthroughs.
-
-```python
-def create_quantum_ldpc_3d_visualizations():
-    """
-    Launch 3D interactive quantum LDPC visualizations
-    """
-    # Interactive 3D Tanner Graph with Syndrome Propagation
-    tanner_model = QuantumLDPCTannerGraph()
-    tanner_visualizer = TannerGraph3DVisualizer(tanner_model)
-    
-    # Real-time parameter controls
-    tanner_visualizer.setup_controls()  # Qubits, checks, syndrome spread
-    tanner_visualizer.setup_3d_layout()  # Force-directed, layered, spherical
-    
-    # 3D Threshold Landscape - Revolutionary Linear Distance Scaling
-    threshold_model = QuantumLDPCThresholdModel()
-    threshold_visualizer = ThresholdLandscape3D(threshold_model)
-    
-    # Breakthrough code families comparison
-    # Surface Codes: d ~ √n (traditional)
-    # Hypergraph Product: d ~ √(n log n) (improved) 
-    # Quantum Tanner: d ~ n (BREAKTHROUGH!)
-    
-    # Interactive 3D exploration with real-time rotation
-    threshold_visualizer.run()  # Drag to rotate, scroll to zoom
-```
-
-![Quantum LDPC 3D Demo](Plots/QLDPC_Demo.png)
-
-<!--
-### 4. Cavity-Mediated Gates Analysis
-Analyzes the cooperativity requirements and tri-layer architecture for implementing non-local gates.
-
-```python
-def create_cavity_cooperativity_analysis():
-    """
-    Visualize cavity cooperativity requirements for fault-tolerant gates
-    """
-    # Define cooperativity range (C values from 10^3 to 10^6)
-    C_values = np.logspace(3, 6, 100)
-    
-    # Gate fidelity model: F = 1 - ε where ε ~ 1/C
-    gate_fidelity = 1 - 1/C_values - 0.01*np.exp(-C_values/1e4)
-    
-    # Highlight fault-tolerant region C ∼ 10^4 - 10^6
-    ax.axvspan(C_min, C_max, alpha=0.2, color=seqCmap(0.5))
-```
-
-![Tri-Layer Architecture](Plots/trilayer_architecture.png)
--->
-
-
-### 4. GHZ State Preparation and Analysis
+### 3. GHZ State Preparation and Analysis
 Demonstrates distributed GHZ state preparation protocols and fidelity scaling analysis.
 
 ```python
@@ -216,7 +178,7 @@ with fidelity: $F_{\text{GHZ}} = 1 - \frac{n-1}{2C} - (n-1)\epsilon_{\text{cavit
 
 ![GHZ Fidelity Analysis](Plots/ghz_fidelity_analysis.png)
 
-### 5. Syndrome Extraction and Error Correction
+### 4. Syndrome Extraction and Error Correction
 Implements the DiVincenzo-Aliferis syndrome extraction protocol for qLDPC codes.
 
 ```python
@@ -239,7 +201,7 @@ def create_syndrome_extraction_circuit():
 
 ![Syndrome Extraction](Plots/syndrome_extraction_circuit.png)
 
-### 7. LDPC Process Animations
+### 5. LDPC Process Animations
 Comprehensive animations demonstrating Tanner graph evolution, error correction dynamics, and threshold behavior.
 
 ```python
@@ -259,36 +221,6 @@ def animate_ldpc_tanner_graph():
 ```
 
 ![LDPC Animation](Plots/ldpc_tanner_graph_animation.gif)
-
-## Results
-
-The implementation successfully demonstrates the revolutionary potential of quantum LDPC codes with cavity-mediated implementation:
-
-### 1. **Cavity Cooperativity Requirements**:
-
-![Cavity Cooperativity](Plots/cavity_cooperativity.png)
-
-This analysis shows the critical cooperativity thresholds ($C \gtrsim 10^4$) required for fault-tolerant cavity-mediated gates. The plot demonstrates the transition from sub-threshold performance to the fault-tolerant regime.
-
-### 2. **Error Threshold Analysis**:
-
-![Error Threshold](Plots/error_threshold.png)
-
-The error threshold analysis reveals the superior performance of qLDPC codes compared to surface codes, with thresholds approaching $p_{\text{th}} \approx 1\%$ for cavity-mediated implementations.
-
-### 3. **LDPC Error Correction Process**:
-
-![LDPC Error Correction](Plots/ldpc_error_correction_animation.gif)
-
-This animation demonstrates the complete error correction cycle, showing how syndrome extraction, decoding, and correction operations work together to maintain logical information integrity.
-
-<!--
-### 4. **Threshold Behavior Animation**:
-
-![Threshold Behavior](Plots/ldpc_threshold_behavior_animation.gif)
-
-The threshold behavior animation illustrates the critical transition between error suppression (below threshold) and error proliferation (above threshold), demonstrating the fundamental principle of fault-tolerant quantum computing.
--->
 
 ## Performance Analysis
 
@@ -311,17 +243,9 @@ The asymptotically good qLDPC codes offer dramatic improvements over surface cod
 - **Connectivity**: Non-local via cavity modes
 - **Fidelity**: $F > 99\%$ for fault tolerance
 
-## Key Breakthroughs Demonstrated
+## Key Contributions
 
-### Experimental Implementation
-- **Cavity QED Solutions**: Practical non-local gate implementation
-- **Tri-Layer Architecture**: Scalable qubit-ancilla-cavity organization
-- **DiVincenzo-Aliferis Protocol**: Fault-tolerant syndrome extraction
-
-### Performance Metrics
-- **1000× Reduction**: Physical qubits per logical qubit vs surface codes
-- **10× Improvement**: Error threshold compared to topological codes
-- **Constant Rate**: $R = \Theta(1)$ encoding efficiency
+This implementation demonstrates cavity-mediated non-local gates for qLDPC codes using the tri-layer qubit-ancilla-cavity architecture. The visualizations cover DiVincenzo-Aliferis syndrome extraction, belief propagation decoding, and comparative analysis of code families (surface, hypergraph product, lifted product, quantum Tanner). The theoretical overhead reduction from $\sim 10^6$ to $\sim 10^3$ physical qubits per logical qubit motivates continued experimental development toward the required cooperativity regime ($C \sim 10^4 - 10^6$).
 
 ## Future Directions
 
