@@ -15,6 +15,10 @@ where $k$ is the number of logical qubits, $n$ the total physical qubits, and $d
 
 **Goal:** Demonstrate the practical implementation of asymptotically good qLDPC codes through cavity-mediated non-local gates, visualize the tri-layer architecture, and analyze the error correction process that enables fault-tolerant quantum computing with dramatically reduced overhead.
 
+<p align="center">
+  <img src="./Plots/apple.gif?raw=true" alt="apple" width="28" height="29" />
+</p>
+
 ## Theoretical Background
 
 ### Quantum LDPC Breakthrough
