@@ -37,10 +37,10 @@ Switch between code families (Surface, Hypergraph Product, Quantum Tanner) and v
 ```python
 from qldpc.simulation.ldpc_circuit import QuantumLDPCCode
 
-code = QuantumLDPCCode(n_data=20, n_checks=10, cooperativity=1e5)
-code.inject_error(3, "X")
-code.compute_syndrome()
-code.bp_step()
+code = QuantumLDPCCode(n_data=20, n_checks=10)
+code.inject_error(3, error_type=2)  # X error
+code.inject_error(7, error_type=3)  # Z error
+code.belief_propagation_step()
 print(f"Syndrome: {code.syndrome}")
 print(f"Gate fidelity: {code.gate_fidelity:.6f}")
 ```

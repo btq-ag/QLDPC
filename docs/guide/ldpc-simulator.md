@@ -38,8 +38,7 @@ where $C$ is cooperativity and $\epsilon_{\text{deph}}$ is dephasing noise.
 ```python
 from qldpc.simulation.ldpc_circuit import QuantumLDPCCode
 
-code = QuantumLDPCCode(n_data=20, n_checks=10, cooperativity=1e5)
-code.inject_error(3, "X")
-code.compute_syndrome()
-code.bp_step()
+code = QuantumLDPCCode(n_data=20, n_checks=10)
+code.inject_error(3, error_type=2)  # X error
+code.belief_propagation_step()
 ```

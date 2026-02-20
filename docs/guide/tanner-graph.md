@@ -31,7 +31,7 @@ qldpc-tanner
 ```python
 from qldpc.tanner.graph_3d import QuantumLDPCTannerGraph
 
-graph = QuantumLDPCTannerGraph(n_data=15, n_x_checks=8, n_z_checks=7)
-graph.build_graph("cycle", "spring")
-graph.propagate_syndrome()
+graph = QuantumLDPCTannerGraph(n_qubits=15, n_checks=10)
+graph.trigger_syndrome(0)
+graph.update_syndrome_visualization()
 ```

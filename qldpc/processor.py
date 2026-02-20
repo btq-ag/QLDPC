@@ -183,10 +183,16 @@ class QuantumLDPCProcessor:
         elif comp_type == ComponentType.RESET and qubit_idx >= 0:
             circuit.reset(qreg[qubit_idx])
     
-    def _simulate_circuit_build(self, components: List[Component3D]) -> Dict[str, Any]:
+    def _simulate_circuit_build(self, components: List[Component3D]):
         """Simulate circuit building when Qiskit is not available."""
+        qubit_components = [
+            c for c in components
+            if c.component_type in (ComponentType.DATA_QUBIT, ComponentType.ANCILLA_QUBIT)
+        ]
+        if not qubit_components:
+            return None
         return {
-            'num_qubits': len(set(comp.position[1] for comp in components)),
+            'num_qubits': len(set(comp.position[1] for comp in qubit_components)),
             'num_gates': len(components),
             'depth': max([comp.position[0] for comp in components], default=0) + 1
         }

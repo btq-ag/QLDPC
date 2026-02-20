@@ -23,7 +23,8 @@
   <a href="#architecture">Architecture</a> |
   <a href="#theory">Theory</a> |
   <a href="#references">References</a> |
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a> |
+  <a href="docs/">Docs</a>
 </p>
 
 <p align="center">
@@ -110,7 +111,7 @@ Dark-themed tkinter GUI with embedded matplotlib panels. Click-to-inject errors,
 - Step-through or automatic BP decoding
 - Gate fidelity model: $F \approx 1 - 1/C - \epsilon_{\text{deph}}$
 
-![Interactive LDPC Simulator](Plots/Interactive%20Simulation.png)
+![Interactive LDPC Simulator](Plots/ldpc_simulator_dark.png)
 
 ### 3D Tanner Graph Visualizer
 
@@ -120,7 +121,7 @@ Dark-themed tkinter GUI with interactive 3D graph exploration, force-directed la
 qldpc-tanner
 ```
 
-![Tanner Graph Animation](Plots/ldpc_tanner_graph_animation.gif)
+![Tanner Graph 3D](Plots/tanner_graph_dark.png)
 
 ### 3D Threshold Landscape
 
@@ -130,7 +131,7 @@ Dark-themed tkinter GUI with rotating 3D surface showing error threshold behavio
 qldpc-threshold
 ```
 
-![Threshold Landscape](Plots/ldpc_threshold_behavior_animation.gif)
+![Threshold Landscape 3D](Plots/threshold_landscape_dark.png)
 
 ### Static Visualizations
 
@@ -171,7 +172,7 @@ qldpc/
         ui/
             history.py       # Undo/redo command pattern
     simulation/
-        ldpc_circuit.py      # QuantumLDPCCode + LDPCCircuitAnimation
+        ldpc_circuit.py      # QuantumLDPCCode + LDPCSimulatorGUI
         cavity_gates.py      # Cooperativity analysis, tri-layer architecture
         ghz.py               # GHZ state preparation and fidelity
         syndrome.py          # Syndrome extraction visualization
