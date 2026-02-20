@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qldpc"
+version = "1.0.0"
+description = "Interactive Python toolkit for quantum LDPC error correction: 3D circuit builder, real-time belief propagation simulation, and threshold analysis."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Jeffrey Morais" }
+]
+keywords = [
+    "quantum-computing",
+    "quantum-error-correction",
+    "ldpc-codes",
+    "surface-codes",
+    "circuit-builder",
+    "interactive-visualization",
+    "tanner-graph",
+    "belief-propagation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "numpy>=1.20",
+    "matplotlib>=3.4",
+    "seaborn>=0.11",
+    "networkx>=2.6",
+]
+
+[project.optional-dependencies]
+quantum = [
+    "qiskit>=0.45",
+    "qiskit-aer>=0.12",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/btq-ag/QLDPC"
+Repository = "https://github.com/btq-ag/QLDPC"
+Issues = "https://github.com/btq-ag/QLDPC/issues"
+
+[project.scripts]
+qldpc-builder = "qldpc.builder.app:main"
+qldpc-simulator = "qldpc.simulation.ldpc_circuit:main"
+qldpc-tanner = "qldpc.tanner.graph_3d:main"
+qldpc-threshold = "qldpc.tanner.threshold_3d:main"
+
+[tool.setuptools.packages.find]
+include = ["qldpc*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
