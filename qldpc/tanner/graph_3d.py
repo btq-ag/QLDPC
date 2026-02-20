@@ -1,594 +1,486 @@
 """
 Interactive 3D Quantum LDPC Tanner Graph Visualizer
 
-This script implements an interactive 3D visualization of quantum LDPC Tanner graphs
-with topological features. Users can:
-- Explore 3D graph structures with vertices and edges
-- Click on nodes to see syndrome propagation
-- Adjust graph parameters and layout algorithms
-- Visualize cavity-mediated connections
-- Compare different QLDPC code constructions
+Dark-themed tkinter GUI with embedded matplotlib 3D panels for:
+  - Force-directed, layered, and spherical graph layouts
+  - Syndrome propagation animation
+  - Multiple code construction comparisons (surface, hypergraph, Tanner)
+  - Auto-rotation with manual override
+
+Usage:
+    qldpc-tanner             # via console entry point
+    python -m qldpc.tanner.graph_3d
 """
 
+import matplotlib
+matplotlib.use("TkAgg")
+
+import tkinter as tk
+from tkinter import ttk
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib.widgets import Slider, Button, CheckButtons
+import random
+import os
 import networkx as nx
 import seaborn as sns
-import time
-from collections import deque
-import random
 
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-# --- Visualization Parameters ---
+from qldpc.theme import (
+    DARK_BG, DARK_PANEL, DARK_AXES, DARK_TEXT, DARK_SUBTITLE,
+    DARK_ACCENT, DARK_ACCENT_ALT, DARK_GRID, DARK_EDGE,
+    DARK_INPUT,
+    COLOR_SUCCESS, COLOR_ERROR,
+    COLOR_DATA_QUBIT, COLOR_X_CHECK, COLOR_Z_CHECK, COLOR_ANCILLA,
+    apply_dark_theme, configure_dark_3d_axes,
+)
+
+# ---------------------------------------------------------------------------
+# Colormaps
+# ---------------------------------------------------------------------------
 seqCmap = sns.color_palette("mako", as_cmap=True)
-divCmap = sns.cubehelix_palette(start=.5, rot=-.5, as_cmap=True)
-lightCmap = sns.cubehelix_palette(start=2, rot=0, dark=0, light=.95, reverse=True, as_cmap=True)
+divCmap = sns.cubehelix_palette(start=0.5, rot=-0.5, as_cmap=True)
 
-# --- Graph Parameters ---
+# ---------------------------------------------------------------------------
+# Defaults
+# ---------------------------------------------------------------------------
 DEFAULT_N_QUBITS = 25
 DEFAULT_N_CHECKS = 15
 DEFAULT_SYNDROME_SPREAD = 3
-ANIMATION_INTERVAL = 100  # Milliseconds for smooth updates
+ANIMATION_INTERVAL = 100  # ms
 
+
+# =========================================================================
+# Model
+# =========================================================================
 
 class QuantumLDPCTannerGraph:
-    """
-    3D Tanner graph model for quantum LDPC codes
-    """
+    """3D Tanner graph model for quantum LDPC codes."""
+
+    CODE_NAMES = ["Surface-like Code", "Hypergraph Product", "Quantum Tanner (Expander)"]
+    LAYOUT_NAMES = ["Force-Directed", "Layered (Bipartite)", "Spherical"]
+
     def __init__(self, n_qubits=DEFAULT_N_QUBITS, n_checks=DEFAULT_N_CHECKS):
         self.n_qubits = n_qubits
         self.n_checks = n_checks
         self.syndrome_spread = DEFAULT_SYNDROME_SPREAD
-        self.graph_type = 0  # 0: Surface-like, 1: Hypergraph, 2: Quantum Tanner
-        self.layout_style = 0  # 0: Force-directed, 1: Layered, 2: Sphere
-        
-        # Graph state
+        self.graph_type = 0
+        self.layout_style = 0
+
         self.graph = None
         self.qubit_positions = None
         self.check_positions = None
         self.active_syndrome = None
         self.syndrome_time = 0
-        
-        # Color and visual state
+
         self.node_colors = None
         self.edge_colors = None
         self.node_sizes = None
-        
+
         self.initialize_graph()
-    
+
     def initialize_graph(self):
-        """Initialize the quantum LDPC Tanner graph"""
         self.graph = nx.Graph()
-        
-        # Add qubit nodes (data qubits)
-        qubit_nodes = [f'q_{i}' for i in range(self.n_qubits)]
-        self.graph.add_nodes_from(qubit_nodes, node_type='qubit')
-        
-        # Add check nodes (syndrome qubits)
-        check_nodes = [f'c_{i}' for i in range(self.n_checks)]
-        self.graph.add_nodes_from(check_nodes, node_type='check')
-        
-        # Add edges based on code type
+        qubit_nodes = [f"q_{i}" for i in range(self.n_qubits)]
+        check_nodes = [f"c_{i}" for i in range(self.n_checks)]
+        self.graph.add_nodes_from(qubit_nodes, node_type="qubit")
+        self.graph.add_nodes_from(check_nodes, node_type="check")
         self._add_edges_by_type()
-        
-        # Generate 3D layout
         self._generate_3d_layout()
-        
-        # Initialize visual properties
-        self._initialize_visual_properties()
-    
+        self._init_visual_properties()
+
     def _add_edges_by_type(self):
-        """Add edges based on the selected quantum LDPC code type"""
-        qubit_nodes = [n for n in self.graph.nodes() if n.startswith('q_')]
-        check_nodes = [n for n in self.graph.nodes() if n.startswith('c_')]
-        
-        if self.graph_type == 0:  # Surface-like code
-            # Local connectivity pattern
-            degree = 4  # Each qubit connected to ~4 checks
-            for qubit in qubit_nodes:
-                checks_to_connect = random.sample(check_nodes, min(degree, len(check_nodes)))
-                for check in checks_to_connect:
-                    self.graph.add_edge(qubit, check)
-                    
-        elif self.graph_type == 1:  # Hypergraph product code
-            # Medium-range connectivity
-            degree = 6  # Higher connectivity
-            for qubit in qubit_nodes:
-                checks_to_connect = random.sample(check_nodes, min(degree, len(check_nodes)))
-                for check in checks_to_connect:
-                    self.graph.add_edge(qubit, check)
-                    
-        else:  # Quantum Tanner code (high connectivity)
-            # Long-range connectivity with expander properties
-            degree = 8  # High connectivity for good distance
-            for qubit in qubit_nodes:
-                checks_to_connect = random.sample(check_nodes, min(degree, len(check_nodes)))
-                for check in checks_to_connect:
-                    self.graph.add_edge(qubit, check)
-    
+        qubits = [n for n in self.graph.nodes() if n.startswith("q_")]
+        checks = [n for n in self.graph.nodes() if n.startswith("c_")]
+        degrees = [4, 6, 8]
+        degree = degrees[self.graph_type]
+        for q in qubits:
+            targets = random.sample(checks, min(degree, len(checks)))
+            for c in targets:
+                self.graph.add_edge(q, c)
+
     def _generate_3d_layout(self):
-        """Generate 3D positions for all nodes"""
-        if self.layout_style == 0:  # Force-directed layout
-            # Use networkx spring layout and extend to 3D with much more spacing
-            pos_2d = nx.spring_layout(self.graph, k=6, iterations=150)  # Even more spacing
+        if self.layout_style == 0:
+            pos = nx.spring_layout(self.graph, k=6, iterations=150)
             self.qubit_positions = np.array([
-                [pos_2d[node][0] * 8, pos_2d[node][1] * 8, random.uniform(-4, 4)]  # Scale up much more
-                for node in self.graph.nodes() if node.startswith('q_')
+                [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
+                for n in self.graph.nodes() if n.startswith("q_")
             ])
             self.check_positions = np.array([
-                [pos_2d[node][0] * 8, pos_2d[node][1] * 8, random.uniform(-4, 4)]  # Scale up much more
-                for node in self.graph.nodes() if node.startswith('c_')
+                [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
+                for n in self.graph.nodes() if n.startswith("c_")
             ])
-            
-        elif self.layout_style == 1:  # Layered layout
-            # Qubits on one layer, checks on another with much more spacing
-            qubit_angles = np.linspace(0, 2*np.pi, self.n_qubits, endpoint=False)
-            qubit_radius = 12.0  # Much larger radius for plot range 20
+        elif self.layout_style == 1:
+            angles_q = np.linspace(0, 2 * np.pi, self.n_qubits, endpoint=False)
             self.qubit_positions = np.array([
-                [qubit_radius * np.cos(angle), qubit_radius * np.sin(angle), -5.0]
-                for angle in qubit_angles
+                [12 * np.cos(a), 12 * np.sin(a), -5.0] for a in angles_q
             ])
-            
-            check_angles = np.linspace(0, 2*np.pi, self.n_checks, endpoint=False)
-            check_radius = 8.0  # Much larger radius
+            angles_c = np.linspace(0, 2 * np.pi, self.n_checks, endpoint=False)
             self.check_positions = np.array([
-                [check_radius * np.cos(angle), check_radius * np.sin(angle), 5.0]  # Higher separation
-                for angle in check_angles
+                [8 * np.cos(a), 8 * np.sin(a), 5.0] for a in angles_c
             ])
-            
-        else:  # Spherical layout
-            # Distribute nodes on sphere surface with much larger radius
-            self.qubit_positions = self._sphere_layout(self.n_qubits, radius=12.0)  # Much larger radius
-            self.check_positions = self._sphere_layout(self.n_checks, radius=8.0)  # Much larger radius
-    
-    def _sphere_layout(self, n_nodes, radius=1.0):
-        """Generate positions on sphere surface using Fibonacci spiral"""
-        positions = []
-        golden_ratio = (1 + 5**0.5) / 2
-        
-        for i in range(n_nodes):
-            theta = 2 * np.pi * i / golden_ratio
-            phi = np.arccos(1 - 2 * (i + 0.5) / n_nodes)
-            
-            x = radius * np.sin(phi) * np.cos(theta)
-            y = radius * np.sin(phi) * np.sin(theta)
-            z = radius * np.cos(phi)
-            
-            positions.append([x, y, z])
-        
-        return np.array(positions)
-    
-    def _initialize_visual_properties(self):
-        """Initialize colors and sizes for nodes"""
-        # Node colors (qubits blue, checks red)
-        qubit_colors = [seqCmap(0.3)] * self.n_qubits
-        check_colors = [divCmap(0.7)] * self.n_checks
-        self.node_colors = qubit_colors + check_colors
-        
-        # Node sizes
-        qubit_sizes = [100] * self.n_qubits
-        check_sizes = [150] * self.n_checks  # Checks slightly larger
-        self.node_sizes = qubit_sizes + check_sizes
-        
-        # Edge colors (default)
-        self.edge_colors = ['gray'] * self.graph.number_of_edges()
-    
+        else:
+            self.qubit_positions = self._sphere_layout(self.n_qubits, 12.0)
+            self.check_positions = self._sphere_layout(self.n_checks, 8.0)
+
+    @staticmethod
+    def _sphere_layout(n, radius=1.0):
+        golden = (1 + 5 ** 0.5) / 2
+        pts = []
+        for i in range(n):
+            theta = 2 * np.pi * i / golden
+            phi = np.arccos(1 - 2 * (i + 0.5) / n)
+            pts.append([
+                radius * np.sin(phi) * np.cos(theta),
+                radius * np.sin(phi) * np.sin(theta),
+                radius * np.cos(phi),
+            ])
+        return np.array(pts)
+
+    def _init_visual_properties(self):
+        self.node_colors = (
+            [seqCmap(0.3)] * self.n_qubits + [divCmap(0.7)] * self.n_checks
+        )
+        self.node_sizes = [100] * self.n_qubits + [150] * self.n_checks
+
     def trigger_syndrome(self, node_index=None):
-        """Trigger syndrome spreading from a specific node"""
         if node_index is None:
             node_index = random.randint(0, self.n_qubits - 1)
-        
         self.active_syndrome = node_index
         self.syndrome_time = 0
-    
+
     def update_syndrome_visualization(self):
-        """Update colors based on syndrome spreading"""
         if self.active_syndrome is None:
             return
-        
-        # Reset colors
-        self._initialize_visual_properties()
-        
-        # Highlight syndrome propagation
-        syndrome_node = f'q_{self.active_syndrome}'
-        
-        # Find nodes within syndrome spread distance
+        self._init_visual_properties()
+        origin = f"q_{self.active_syndrome}"
         for node in self.graph.nodes():
             try:
-                distance = nx.shortest_path_length(self.graph, syndrome_node, node)
-                if distance <= self.syndrome_spread:
-                    # Color based on distance (closer = more intense)
-                    intensity = 1.0 - (distance / self.syndrome_spread)
-                    
-                    if node.startswith('q_'):
-                        node_idx = int(node.split('_')[1])
-                        self.node_colors[node_idx] = seqCmap(0.8 * intensity + 0.2)
-                        self.node_sizes[node_idx] = int(120 + 80 * intensity)
-                    else:
-                        node_idx = int(node.split('_')[1]) + self.n_qubits
-                        self.node_colors[node_idx] = divCmap(0.8 * intensity + 0.2)
-                        self.node_sizes[node_idx] = int(170 + 80 * intensity)
+                d = nx.shortest_path_length(self.graph, origin, node)
             except nx.NetworkXNoPath:
                 continue
-        
+            if d <= self.syndrome_spread:
+                intensity = 1.0 - d / self.syndrome_spread
+                if node.startswith("q_"):
+                    idx = int(node.split("_")[1])
+                    self.node_colors[idx] = seqCmap(0.8 * intensity + 0.2)
+                    self.node_sizes[idx] = int(120 + 80 * intensity)
+                else:
+                    idx = int(node.split("_")[1]) + self.n_qubits
+                    self.node_colors[idx] = divCmap(0.8 * intensity + 0.2)
+                    self.node_sizes[idx] = int(170 + 80 * intensity)
         self.syndrome_time += 1
-        
-        # Clear syndrome after some time
         if self.syndrome_time > 20:
             self.active_syndrome = None
-    
+
     def get_edge_positions(self):
-        """Get 3D positions for all edges"""
-        edge_positions = []
-        qubit_nodes = [n for n in self.graph.nodes() if n.startswith('q_')]
-        check_nodes = [n for n in self.graph.nodes() if n.startswith('c_')]
-        
-        for edge in self.graph.edges():
-            node1, node2 = edge
-            
-            if node1.startswith('q_'):
-                pos1 = self.qubit_positions[int(node1.split('_')[1])]
-            else:
-                pos1 = self.check_positions[int(node1.split('_')[1])]
-            
-            if node2.startswith('q_'):
-                pos2 = self.qubit_positions[int(node2.split('_')[1])]
-            else:
-                pos2 = self.check_positions[int(node2.split('_')[1])]
-            
-            edge_positions.append([pos1, pos2])
-        
-        return edge_positions
-    
-    def get_code_type_name(self):
-        """Get human-readable code type name"""
-        names = ["Surface-like Code", "Hypergraph Product", "Quantum Tanner (Expander)"]
-        return names[self.graph_type]
-    
-    def get_layout_name(self):
-        """Get human-readable layout name"""
-        names = ["Force-Directed", "Layered (Bipartite)", "Spherical"]
-        return names[self.layout_style]
+        edges = []
+        for n1, n2 in self.graph.edges():
+            p1 = (self.qubit_positions[int(n1.split("_")[1])]
+                   if n1.startswith("q_")
+                   else self.check_positions[int(n1.split("_")[1])])
+            p2 = (self.qubit_positions[int(n2.split("_")[1])]
+                   if n2.startswith("q_")
+                   else self.check_positions[int(n2.split("_")[1])])
+            edges.append((p1, p2))
+        return edges
 
 
-class TannerGraph3DVisualizer:
-    """Interactive 3D Tanner graph visualization"""
-    
-    def __init__(self, tanner_model):
-        self.model = tanner_model
-        
-        # Animation state (initialize before setup_figure)
-        self.rotation_speed = 0.5
+# =========================================================================
+# GUI
+# =========================================================================
+
+class TannerGraph3DGUI:
+    """Tkinter dark-mode GUI with embedded 3D matplotlib Tanner graph."""
+
+    TITLE = "3D Quantum LDPC Tanner Graph Visualizer"
+
+    def __init__(self, model=None):
+        self.model = model or QuantumLDPCTannerGraph()
+        self.azimuth = 45.0
+        self.elevation = 30.0
         self.auto_rotate = True
-        self.azimuth = 45
-        self.elevation = 30
-        
-        # Interaction state
         self.show_edges = True
         self.show_labels = False
-        self.highlight_neighbors = True
-        
-        self.setup_figure()
-        self.setup_controls()
-    
-    def setup_figure(self):
-        """Setup the main 3D figure"""
-        self.fig = plt.figure(figsize=(18, 12))  # Made wider for better plot visibility
-        
-        # Layout with more space for the main plot
-        gs = self.fig.add_gridspec(2, 1, height_ratios=[4, 1], hspace=0.3, bottom=0.2)
-        
-        # Main 3D plot (bigger!)
-        self.ax_3d = self.fig.add_subplot(gs[0], projection='3d')
-        self.ax_3d.set_title("3D Quantum LDPC Tanner Graph\nInteractive Syndrome Visualization", 
-                            fontsize=18, fontweight='bold', pad=20)
-        
-        # Info panel
-        self.ax_info = self.fig.add_subplot(gs[1])
-        self.ax_info.axis('off')
-        
-        # Set initial 3D view
-        self.ax_3d.view_init(elev=self.elevation, azim=self.azimuth)
-    
-    def setup_controls(self):
-        """Setup interactive controls with vertical stacking - sliders on left, buttons on right"""
-        control_height = 0.03
-        
-        # Left side: Stack 3 sliders vertically
-        slider_x = 0.05
-        slider_width = 0.25
-        
-        # Slider 1: Qubits (top)
-        ax_qubits = plt.axes([slider_x, 0.12, slider_width, control_height])
-        self.slider_qubits = Slider(ax_qubits, 'Qubits', 10, 50, 
-                                   valinit=DEFAULT_N_QUBITS, valfmt='%d')
-        self.slider_qubits.on_changed(self.update_qubits)
-        
-        # Slider 2: Checks (middle)
-        ax_checks = plt.axes([slider_x, 0.08, slider_width, control_height])
-        self.slider_checks = Slider(ax_checks, 'Checks', 5, 30, 
-                                   valinit=DEFAULT_N_CHECKS, valfmt='%d')
-        self.slider_checks.on_changed(self.update_checks)
-        
-        # Slider 3: Syndrome (bottom)
-        ax_spread = plt.axes([slider_x, 0.04, slider_width, control_height])
-        self.slider_spread = Slider(ax_spread, 'Syndrome', 1, 5, 
-                                   valinit=DEFAULT_SYNDROME_SPREAD, valfmt='%d')
-        self.slider_spread.on_changed(self.update_spread)
-        
-        # Right side: Stack 3 buttons vertically
-        button_x = 0.4
-        button_width = 0.15
-        
-        # Button 1: Code Type (top)
-        ax_code_type = plt.axes([button_x, 0.12, button_width, control_height])
-        self.btn_code_type = Button(ax_code_type, 'Code Type')
-        self.btn_code_type.on_clicked(self.cycle_code_type)
-        
-        # Button 2: Layout (middle)
-        ax_layout = plt.axes([button_x, 0.08, button_width, control_height])
-        self.btn_layout = Button(ax_layout, 'Layout')
-        self.btn_layout.on_clicked(self.cycle_layout)
-        
-        # Button 3: Syndrome (bottom)
-        ax_syndrome = plt.axes([button_x, 0.04, button_width, control_height])
-        self.btn_syndrome = Button(ax_syndrome, 'Syndrome')
-        self.btn_syndrome.on_clicked(self.trigger_syndrome)
-        
-        # Far right: Checkboxes (stacked vertically)
-        ax_check = plt.axes([0.7, 0.04, 0.25, 0.12])
-        self.checkbox = CheckButtons(ax_check, ['Edges', 'Labels', 'Auto Rotate'], 
-                                   [True, False, True])
-        self.checkbox.on_clicked(self.toggle_options)
-    
-    def update_qubits(self, val):
-        """Update number of qubits"""
-        self.model.n_qubits = int(val)
+
+        self.root = tk.Tk()
+        self.root.title(self.TITLE)
+        self.root.geometry("1320x860")
+        self.root.minsize(960, 640)
+        self.style = apply_dark_theme(self.root)
+
+        self._build_ui()
+        self._animate()
+
+    # -- UI -----------------------------------------------------------------
+
+    def _build_ui(self):
+        outer = ttk.Frame(self.root, style="Dark.TFrame")
+        outer.pack(fill=tk.BOTH, expand=True)
+        self._build_controls(outer)
+        self._build_canvas(outer)
+
+    def _build_controls(self, parent):
+        ctrl = ttk.Frame(parent, style="Dark.TFrame", width=260)
+        ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0), pady=8)
+        ctrl.pack_propagate(False)
+
+        ttk.Label(ctrl, text="Tanner Graph 3D", style="Title.TLabel").pack(
+            anchor=tk.W, pady=(0, 8)
+        )
+
+        # --- Graph parameters ----------------------------------------------
+        gp = ttk.LabelFrame(ctrl, text="Graph", style="Dark.TLabelframe")
+        gp.pack(fill=tk.X, pady=4)
+
+        ttk.Label(gp, text="Qubits", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
+        self.qubits_var = tk.IntVar(value=DEFAULT_N_QUBITS)
+        ttk.Scale(
+            gp, from_=10, to=50, variable=self.qubits_var,
+            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            command=lambda v: self._rebuild_graph(),
+        ).pack(fill=tk.X, padx=4, pady=2)
+
+        ttk.Label(gp, text="Checks", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
+        self.checks_var = tk.IntVar(value=DEFAULT_N_CHECKS)
+        ttk.Scale(
+            gp, from_=5, to=30, variable=self.checks_var,
+            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            command=lambda v: self._rebuild_graph(),
+        ).pack(fill=tk.X, padx=4, pady=2)
+
+        ttk.Label(gp, text="Syndrome Spread", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
+        self.spread_var = tk.IntVar(value=DEFAULT_SYNDROME_SPREAD)
+        ttk.Scale(
+            gp, from_=1, to=5, variable=self.spread_var,
+            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            command=lambda v: setattr(self.model, "syndrome_spread", int(float(v))),
+        ).pack(fill=tk.X, padx=4, pady=(2, 4))
+
+        # --- Code type & layout --------------------------------------------
+        cl = ttk.LabelFrame(ctrl, text="Construction", style="Dark.TLabelframe")
+        cl.pack(fill=tk.X, pady=4)
+
+        ttk.Button(cl, text="Cycle Code Type", style="Dark.TButton",
+                   command=self._cycle_code).pack(fill=tk.X, padx=4, pady=2)
+        self.code_label = ttk.Label(cl, text=self.model.CODE_NAMES[0], style="Accent.TLabel")
+        self.code_label.pack(anchor=tk.W, padx=4)
+
+        ttk.Button(cl, text="Cycle Layout", style="Dark.TButton",
+                   command=self._cycle_layout).pack(fill=tk.X, padx=4, pady=2)
+        self.layout_label = ttk.Label(cl, text=self.model.LAYOUT_NAMES[0], style="Dark.TLabel")
+        self.layout_label.pack(anchor=tk.W, padx=4, pady=(0, 4))
+
+        # --- Actions -------------------------------------------------------
+        act = ttk.LabelFrame(ctrl, text="Actions", style="Dark.TLabelframe")
+        act.pack(fill=tk.X, pady=4)
+
+        ttk.Button(act, text="Trigger Syndrome", style="Accent.TButton",
+                   command=lambda: self.model.trigger_syndrome()).pack(fill=tk.X, padx=4, pady=2)
+
+        # --- Display -------------------------------------------------------
+        disp = ttk.LabelFrame(ctrl, text="Display", style="Dark.TLabelframe")
+        disp.pack(fill=tk.X, pady=4)
+
+        self.edges_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(disp, text="Show Edges", variable=self.edges_var,
+                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+
+        self.labels_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(disp, text="Show Labels", variable=self.labels_var,
+                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+
+        self.rotate_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(disp, text="Auto Rotate", variable=self.rotate_var,
+                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4, pady=(0, 4))
+
+        # --- Stats ---------------------------------------------------------
+        stats = ttk.LabelFrame(ctrl, text="Statistics", style="Dark.TLabelframe")
+        stats.pack(fill=tk.X, pady=4, expand=True)
+
+        self.stats_text = tk.Text(
+            stats, height=6, wrap=tk.WORD,
+            bg=DARK_INPUT, fg=DARK_ACCENT, insertbackground=DARK_ACCENT,
+            font=("Consolas", 9), relief=tk.FLAT, bd=0,
+        )
+        self.stats_text.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
+        self._refresh_stats()
+
+        # --- Instructions --------------------------------------------------
+        ttk.Label(
+            ctrl,
+            text="Click Trigger Syndrome to see\nerror propagation on graph",
+            style="Subtitle.TLabel", wraplength=240,
+        ).pack(anchor=tk.W, pady=(8, 0))
+
+    def _build_canvas(self, parent):
+        frame = ttk.Frame(parent, style="Dark.TFrame")
+        frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=8, pady=8)
+
+        self.fig = Figure(figsize=(10, 8), facecolor=DARK_BG)
+        self.ax = self.fig.add_subplot(111, projection="3d")
+        configure_dark_3d_axes(self.ax)
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=frame)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        # Mouse interaction
+        self.canvas.mpl_connect("button_press_event", self._on_click)
+        self.canvas.mpl_connect("scroll_event", self._on_scroll)
+
+    # -- callbacks ----------------------------------------------------------
+
+    def _rebuild_graph(self):
+        self.model.n_qubits = int(self.qubits_var.get())
+        self.model.n_checks = int(self.checks_var.get())
         self.model.initialize_graph()
-    
-    def update_checks(self, val):
-        """Update number of checks"""
-        self.model.n_checks = int(val)
-        self.model.initialize_graph()
-    
-    def update_spread(self, val):
-        """Update syndrome spread distance"""
-        self.model.syndrome_spread = int(val)
-    
-    def cycle_code_type(self, event):
-        """Cycle through code types"""
+        self._refresh_stats()
+
+    def _cycle_code(self):
         self.model.graph_type = (self.model.graph_type + 1) % 3
         self.model.initialize_graph()
-    
-    def cycle_layout(self, event):
-        """Cycle through layout styles"""
+        self.code_label.configure(text=self.model.CODE_NAMES[self.model.graph_type])
+        self._refresh_stats()
+
+    def _cycle_layout(self):
         self.model.layout_style = (self.model.layout_style + 1) % 3
         self.model.initialize_graph()
-    
-    def trigger_syndrome(self, event):
-        """Trigger syndrome visualization"""
-        self.model.trigger_syndrome()
-    
-    def toggle_options(self, label):
-        """Toggle display options"""
-        if label == 'Edges':
-            self.show_edges = not self.show_edges
-        elif label == 'Labels':
-            self.show_labels = not self.show_labels
-        elif label == 'Auto Rotate':
-            self.auto_rotate = not self.auto_rotate
-    
-    def draw_3d_graph(self):
-        """Draw the 3D Tanner graph"""
-        self.ax_3d.clear()
-        
-        # Update syndrome visualization
-        self.model.update_syndrome_visualization()
-        
-        # Draw edges first (so they appear behind nodes)
-        if self.show_edges:
-            edge_positions = self.model.get_edge_positions()
-            for i, (pos1, pos2) in enumerate(edge_positions):
-                self.ax_3d.plot3D(*zip(pos1, pos2), 'gray', alpha=0.4, linewidth=0.8)
-        
-        # Draw qubit nodes (data qubits)
-        qubit_pos = self.model.qubit_positions
-        if len(qubit_pos) > 0:
-            self.ax_3d.scatter(qubit_pos[:, 0], qubit_pos[:, 1], qubit_pos[:, 2],
-                              c=self.model.node_colors[:self.model.n_qubits],
-                              s=self.model.node_sizes[:self.model.n_qubits],
-                              alpha=0.8, marker='o', label='Data Qubits', edgecolors='black', linewidth=0.5)
-        
-        # Draw check nodes (syndrome qubits)
-        check_pos = self.model.check_positions
-        if len(check_pos) > 0:
-            self.ax_3d.scatter(check_pos[:, 0], check_pos[:, 1], check_pos[:, 2],
-                              c=self.model.node_colors[self.model.n_qubits:],
-                              s=self.model.node_sizes[self.model.n_qubits:],
-                              alpha=0.8, marker='s', label='Check Nodes', edgecolors='black', linewidth=0.5)
-        
-        # Add labels if requested
-        if self.show_labels:
-            for i, pos in enumerate(qubit_pos):
-                self.ax_3d.text(pos[0], pos[1], pos[2], f'q{i}', fontsize=8)
-            for i, pos in enumerate(check_pos):
-                self.ax_3d.text(pos[0], pos[1], pos[2], f'c{i}', fontsize=8)
-        
-        # Set labels and title
-        self.ax_3d.set_xlabel('X', fontsize=12)
-        self.ax_3d.set_ylabel('Y', fontsize=12)
-        self.ax_3d.set_zlabel('Z', fontsize=12)
-        
-        # Update title
-        code_name = self.model.get_code_type_name()
-        layout_name = self.model.get_layout_name()
-        title = f"3D Tanner Graph: {code_name}\nLayout: {layout_name}"
-        self.ax_3d.set_title(title, fontsize=14, fontweight='bold', pad=20)
-        
-        # Legend positioned to avoid overlap with controls
-        self.ax_3d.legend(loc='upper left', bbox_to_anchor=(0.02, 0.98))
-        
-        # Set equal aspect ratio with much larger range (20 in all directions)
-        max_range = 20.0  # Increased from 5.0 to 20.0
-        self.ax_3d.set_xlim([-max_range, max_range])
-        self.ax_3d.set_ylim([-max_range, max_range])
-        self.ax_3d.set_zlim([-max_range, max_range])
-    
-    def draw_info_panel(self):
-        """Draw information panel"""
-        self.ax_info.clear()
-        self.ax_info.axis('off')
-        
-        # Graph statistics
-        n_edges = self.model.graph.number_of_edges()
-        avg_degree = 2 * n_edges / self.model.graph.number_of_nodes() if self.model.graph.number_of_nodes() > 0 else 0
-        
-        # Current parameters
-        param_text = (
-            f"Nodes: {self.model.n_qubits} qubits + {self.model.n_checks} checks • "
-            f"Edges: {n_edges} • Avg Degree: {avg_degree:.1f} • "
-            f"Code: {self.model.get_code_type_name()}"
-        )
-        
-        self.ax_info.text(0.5, 0.7, param_text, ha='center', va='center',
-                         transform=self.ax_info.transAxes, fontsize=11,
-                         bbox=dict(boxstyle='round,pad=0.5', facecolor='lightpink', alpha=0.8))
-        
-        # Instructions (more detailed)
-        instructions = (
-            "• Left-click anywhere to trigger syndrome propagation • "
-            "Drag to rotate • Scroll/+/- keys to zoom • "
-            "Use buttons/sliders to change parameters"
-        )
-        
-        self.ax_info.text(0.5, 0.3, instructions, ha='center', va='center',
-                         transform=self.ax_info.transAxes, fontsize=10,
-                         style='italic', color='darkblue')
-    
-    def update(self, frame):
-        """Animation update function"""
-        # Auto-rotation
-        if self.auto_rotate:
-            self.azimuth += self.rotation_speed
-            self.ax_3d.view_init(elev=self.elevation, azim=self.azimuth)
-        
-        # Redraw components
-        self.draw_3d_graph()
-        self.draw_info_panel()
-        
-        return []
-    
-    def zoom(self, factor):
-        """Zoom the 3D plot by a given factor"""
-        # Get current limits
-        xlim = self.ax_3d.get_xlim()
-        ylim = self.ax_3d.get_ylim()
-        zlim = self.ax_3d.get_zlim()
-        
-        # Calculate centers
-        x_center = (xlim[0] + xlim[1]) / 2
-        y_center = (ylim[0] + ylim[1]) / 2
-        z_center = (zlim[0] + zlim[1]) / 2
-        
-        # Calculate new ranges
-        x_range = (xlim[1] - xlim[0]) * factor / 2
-        y_range = (ylim[1] - ylim[0]) * factor / 2
-        z_range = (zlim[1] - zlim[0]) * factor / 2
-        
-        # Apply new limits
-        self.ax_3d.set_xlim([x_center - x_range, x_center + x_range])
-        self.ax_3d.set_ylim([y_center - y_range, y_center + y_range])
-        self.ax_3d.set_zlim([z_center - z_range, z_center + z_range])
-        
-        # Force redraw
-        self.fig.canvas.draw_idle()
-    
-    def run(self):
-        """Start the interactive visualization"""
-        ani = animation.FuncAnimation(self.fig, self.update, blit=False,
-                                    interval=ANIMATION_INTERVAL, cache_frame_data=False)
-        
-        # Enable better interaction
-        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
-        self.fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
-        self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
-        self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
-        
-        plt.subplots_adjust(left=0.05, bottom=0.4, right=0.95, top=0.9, hspace=0.5)
-        plt.show()
-    
-    def on_key_press(self, event):
-        """Handle keyboard shortcuts for zoom"""
-        if event.inaxes == self.ax_3d:
-            if event.key == '+' or event.key == '=':
-                self.zoom(0.8)  # Zoom in
-                self.auto_rotate = False
-            elif event.key == '-':
-                self.zoom(1.2)  # Zoom out
-                self.auto_rotate = False
-    
-    def on_click(self, event):
-        """Handle mouse clicks"""
-        if event.inaxes == self.ax_3d:
-            if event.button == 1:  # Left click
-                # Try to find the closest node to click location
-                click_successful = False
-                
-                # Get 2D projection coordinates for node selection
-                if len(self.model.qubit_positions) > 0:
-                    # For now, just trigger syndrome at a random qubit
-                    # In future, could implement proper 3D picking
-                    self.model.trigger_syndrome()
-                    click_successful = True
-                    print(f"Syndrome triggered! Watch the colored propagation spreading from infected qubit.")
-                
-                if not click_successful:
-                    print("Click on the 3D plot to trigger syndrome propagation")
-                    
-            # Disable auto rotation when user interacts
-            self.auto_rotate = False
-    
-    def on_mouse_move(self, event):
-        """Handle mouse movement"""
-        if event.inaxes == self.ax_3d and event.button is not None:
-            # User is dragging, disable auto rotation
-            self.auto_rotate = False
-    
-    def on_scroll(self, event):
-        """Handle mouse scroll for zooming"""
-        if event.inaxes == self.ax_3d:
-            # Apply zoom based on scroll direction
-            if event.step > 0:
-                self.zoom(0.9)  # Zoom in
-            else:
-                self.zoom(1.1)  # Zoom out
-            
-            # Disable auto rotation when zooming
-            self.auto_rotate = False
+        self.layout_label.configure(text=self.model.LAYOUT_NAMES[self.model.layout_style])
 
+    def _on_click(self, event):
+        if event.inaxes == self.ax and event.button == 1:
+            self.model.trigger_syndrome()
+
+    def _on_scroll(self, event):
+        if event.inaxes == self.ax:
+            factor = 0.9 if event.step > 0 else 1.1
+            for getter, setter in [
+                (self.ax.get_xlim, self.ax.set_xlim),
+                (self.ax.get_ylim, self.ax.set_ylim),
+                (self.ax.get_zlim, self.ax.set_zlim),
+            ]:
+                lo, hi = getter()
+                c = (lo + hi) / 2
+                r = (hi - lo) * factor / 2
+                setter([c - r, c + r])
+
+    def _refresh_stats(self):
+        ne = self.model.graph.number_of_edges()
+        nn = self.model.graph.number_of_nodes()
+        avg = 2 * ne / nn if nn else 0
+        self.stats_text.configure(state=tk.NORMAL)
+        self.stats_text.delete("1.0", tk.END)
+        self.stats_text.insert(
+            tk.END,
+            f"Qubits:    {self.model.n_qubits}\n"
+            f"Checks:    {self.model.n_checks}\n"
+            f"Edges:     {ne}\n"
+            f"Avg Deg:   {avg:.1f}\n"
+            f"Code:      {self.model.CODE_NAMES[self.model.graph_type]}\n"
+            f"Layout:    {self.model.LAYOUT_NAMES[self.model.layout_style]}",
+        )
+        self.stats_text.configure(state=tk.DISABLED)
+
+    # -- drawing ------------------------------------------------------------
+
+    def _draw(self):
+        ax = self.ax
+        ax.clear()
+        ax.set_facecolor(DARK_AXES)
+
+        self.model.update_syndrome_visualization()
+
+        # Edges
+        if self.edges_var.get():
+            for p1, p2 in self.model.get_edge_positions():
+                ax.plot3D(*zip(p1, p2), color=DARK_EDGE, alpha=0.35, linewidth=0.7)
+
+        # Qubit nodes
+        qp = self.model.qubit_positions
+        if len(qp) > 0:
+            ax.scatter(
+                qp[:, 0], qp[:, 1], qp[:, 2],
+                c=self.model.node_colors[: self.model.n_qubits],
+                s=self.model.node_sizes[: self.model.n_qubits],
+                alpha=0.85, marker="o", edgecolors=DARK_EDGE, linewidth=0.5,
+                label="Data Qubits",
+            )
+
+        # Check nodes
+        cp = self.model.check_positions
+        if len(cp) > 0:
+            ax.scatter(
+                cp[:, 0], cp[:, 1], cp[:, 2],
+                c=self.model.node_colors[self.model.n_qubits:],
+                s=self.model.node_sizes[self.model.n_qubits:],
+                alpha=0.85, marker="s", edgecolors=DARK_EDGE, linewidth=0.5,
+                label="Check Nodes",
+            )
+
+        # Labels
+        if self.labels_var.get():
+            for i, p in enumerate(qp):
+                ax.text(p[0], p[1], p[2], f"q{i}", fontsize=7, color=DARK_SUBTITLE)
+            for i, p in enumerate(cp):
+                ax.text(p[0], p[1], p[2], f"c{i}", fontsize=7, color=DARK_SUBTITLE)
+
+        code_name = self.model.CODE_NAMES[self.model.graph_type]
+        layout_name = self.model.LAYOUT_NAMES[self.model.layout_style]
+        ax.set_title(
+            f"3D Tanner Graph: {code_name}\nLayout: {layout_name}",
+            color=DARK_TEXT, fontweight="bold", fontsize=13,
+        )
+        ax.set_xlabel("X", color=DARK_SUBTITLE)
+        ax.set_ylabel("Y", color=DARK_SUBTITLE)
+        ax.set_zlabel("Z", color=DARK_SUBTITLE)
+        ax.tick_params(colors=DARK_SUBTITLE)
+        for pane in (ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane):
+            pane.set_facecolor(DARK_BG)
+            pane.set_edgecolor(DARK_EDGE)
+        ax.grid(color=DARK_GRID, alpha=0.25)
+        ax.legend(loc="upper left", fontsize=8,
+                  facecolor=DARK_PANEL, edgecolor=DARK_EDGE, labelcolor=DARK_TEXT)
+
+        rng = 20.0
+        ax.set_xlim([-rng, rng])
+        ax.set_ylim([-rng, rng])
+        ax.set_zlim([-rng, rng])
+
+    # -- animation ----------------------------------------------------------
+
+    def _animate(self):
+        if self.rotate_var.get():
+            self.azimuth += 0.5
+            self.ax.view_init(elev=self.elevation, azim=self.azimuth)
+
+        self._draw()
+        self.canvas.draw_idle()
+        self.root.after(ANIMATION_INTERVAL, self._animate)
+
+    # -- public API ---------------------------------------------------------
+
+    def run(self):
+        self.root.mainloop()
+
+    def save_screenshot(self, path=None):
+        if path is None:
+            plots_dir = os.path.join(os.path.dirname(__file__), "..", "..", "Plots")
+            os.makedirs(plots_dir, exist_ok=True)
+            path = os.path.join(plots_dir, "tanner_graph_3d.png")
+        self.fig.savefig(path, dpi=150, facecolor=DARK_BG, edgecolor="none")
+
+
+# =========================================================================
+# Entry point
+# =========================================================================
 
 def main():
     """Entry point for the 3D Tanner graph visualizer."""
-    print("--- Starting 3D Quantum LDPC Tanner Graph Visualizer ---")
-    print("Interactive exploration of quantum LDPC graph topology")
-    print("Featuring syndrome propagation and expander graph properties")
-    print("\nInteractive Features:")
-    print("  3D graph visualization with vertices and edges")
-    print("  Click anywhere to see error propagation")
-    print("  Adjust graph parameters with sliders")
-    print("  Cycle through different code constructions")
-    print("  Multiple 3D layout algorithms")
-    print("  Smooth auto-rotation with manual override")
-    print("  Zoom with scroll wheel or +/- keys")
-
-    tanner_model = QuantumLDPCTannerGraph()
-    visualizer = TannerGraph3DVisualizer(tanner_model)
-    visualizer.run()
-
-    print("--- 3D Tanner Graph visualization window closed ---")
+    print("Starting 3D Quantum LDPC Tanner Graph Visualizer")
+    print("Click to trigger syndrome | Scroll to zoom | Drag to rotate")
+    model = QuantumLDPCTannerGraph()
+    gui = TannerGraph3DGUI(model)
+    gui.run()
 
 
 if __name__ == "__main__":

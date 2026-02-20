@@ -1,0 +1,16 @@
+# Core dependencies (also declared in pyproject.toml)
+numpy>=1.20
+matplotlib>=3.4
+seaborn>=0.11
+networkx>=2.6
+
+# Optional: quantum back-end
+# qiskit>=0.45
+# qiskit-aer>=0.12
+
+# Development
+# pytest>=7.0
+# pytest-cov>=4.0
+# mkdocs>=1.5
+# mkdocs-material>=9.0
+# mkdocstrings[python]>=0.24

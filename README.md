@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/btq-ag/QLDPC/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/btq-ag/QLDPC/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://www.python.org/"><img alt="Python 3.9+" src="https://img.shields.io/badge/python-3.9%2B-blue?logo=python&logoColor=white" /></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green" /></a>
   <a href="#quick-start"><img alt="pip install" src="https://img.shields.io/badge/install-pip%20install%20--e%20.-orange" /></a>
@@ -103,7 +104,7 @@ Press `B` to cycle through LDPC views:
 
 ### Real-Time LDPC Simulator
 
-Matplotlib-based interactive simulator with click-to-inject errors, live belief propagation decoding, and a cooperativity slider for cavity QED parameter exploration.
+Dark-themed tkinter GUI with embedded matplotlib panels. Click-to-inject errors, live belief propagation decoding, and a cooperativity slider for cavity QED parameter exploration.
 
 - Configurable code parameters (data qubits, check nodes)
 - Step-through or automatic BP decoding
@@ -113,19 +114,23 @@ Matplotlib-based interactive simulator with click-to-inject errors, live belief 
 
 ### 3D Tanner Graph Visualizer
 
-Interactive 3D graph exploration with force-directed layouts, syndrome propagation visualization, and multiple code construction comparisons.
+Dark-themed tkinter GUI with interactive 3D graph exploration, force-directed layouts, syndrome propagation visualization, and multiple code construction comparisons.
 
 ```bash
 qldpc-tanner
 ```
 
+![Tanner Graph Animation](Plots/ldpc_tanner_graph_animation.gif)
+
 ### 3D Threshold Landscape
 
-Rotating 3D surface showing error threshold behavior across code families (surface, hypergraph product, quantum Tanner) with real-time parameter adjustment.
+Dark-themed tkinter GUI with rotating 3D surface showing error threshold behavior across code families (surface, hypergraph product, quantum Tanner) with real-time parameter adjustment.
 
 ```bash
 qldpc-threshold
 ```
+
+![Threshold Landscape](Plots/ldpc_threshold_behavior_animation.gif)
 
 ### Static Visualizations
 
@@ -195,8 +200,8 @@ Plots/                       # Generated figures and screenshots
 | Technology | Role |
 |------------|------|
 | Python 3.9+ | Core language |
-| tkinter | Circuit builder GUI framework |
-| matplotlib | Simulation GUIs, static plots, animations |
+| tkinter | Dark-themed GUI framework (all interactive tools) |
+| matplotlib | Embedded plotting, static figures, animations |
 | NumPy | Numerical computation, parity matrices |
 | Seaborn | Color palettes, statistical visualization |
 | NetworkX | Graph structures for Tanner graphs |
@@ -265,6 +270,14 @@ Gate fidelity: $F \approx 1 - 1/C - \epsilon_{\text{deph}}$, enabling thresholds
 | Project | Description |
 |---------|-------------|
 | [TQNN](https://github.com/IsolatedSingularity/Topological-Quantum-Neural-Networks) | Topological Quantum Neural Networks - interactive visualization toolkit |
+
+---
+
+## Contact
+
+**Jeffrey Morais** - [GitHub](https://github.com/IsolatedSingularity) | [btq-ag/QLDPC](https://github.com/btq-ag/QLDPC)
+
+Questions, ideas, or contributions are welcome! Open an [issue](https://github.com/btq-ag/QLDPC/issues) or see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

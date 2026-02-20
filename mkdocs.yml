@@ -1,0 +1,62 @@
+site_name: QLDPC Documentation
+site_description: Interactive Python Toolkit for Quantum LDPC Error Correction
+site_url: https://btq-ag.github.io/QLDPC/
+repo_url: https://github.com/btq-ag/QLDPC
+repo_name: btq-ag/QLDPC
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: teal
+    accent: green
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+  - User Guide:
+      - Circuit Builder: guide/circuit-builder.md
+      - LDPC Simulator: guide/ldpc-simulator.md
+      - Tanner Graph 3D: guide/tanner-graph.md
+      - Threshold Landscape: guide/threshold-landscape.md
+  - API Reference:
+      - qldpc: api/qldpc.md
+      - Components: api/components.md
+      - Config: api/config.md
+      - Processor: api/processor.md
+      - Theme: api/theme.md
+      - Simulation: api/simulation.md
+      - Tanner: api/tanner.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            members_order: source
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - admonition
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

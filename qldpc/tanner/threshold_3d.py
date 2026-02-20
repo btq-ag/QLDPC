@@ -1,468 +1,410 @@
 """
 Real-Time 3D Quantum LDPC Threshold Landscape Visualizer
 
-This script implements an interactive 3D visualization of quantum LDPC threshold behavior
-and scaling analysis. Users can:
-- Rotate and zoom the 3D landscape in real-time
-- Adjust code parameters with interactive sliders
-- Visualize the breakthrough linear distance scaling
-- Explore error threshold surfaces across different code families
-- Compare scaling behaviors between surface codes and QLDPC codes
+Dark-themed tkinter GUI with embedded matplotlib 3D surface for:
+  - Error threshold surfaces across code families
+  - Distance scaling analysis
+  - Code rate / code length trade-offs
+  - Real-time parameter adjustment and auto-rotation
+
+Usage:
+    qldpc-threshold          # via console entry point
+    python -m qldpc.tanner.threshold_3d
 """
 
+import matplotlib
+matplotlib.use("TkAgg")
+
+import tkinter as tk
+from tkinter import ttk
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib.widgets import Slider, Button, CheckButtons
-from matplotlib.patches import Rectangle
+import os
 import seaborn as sns
-import time
-from collections import deque
 
-# --- Visualization Parameters ---
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from qldpc.theme import (
+    DARK_BG, DARK_PANEL, DARK_AXES, DARK_TEXT, DARK_SUBTITLE,
+    DARK_ACCENT, DARK_ACCENT_ALT, DARK_GRID, DARK_EDGE,
+    DARK_INPUT,
+    COLOR_SUCCESS, COLOR_ERROR,
+    apply_dark_theme, configure_dark_3d_axes,
+)
+
+# ---------------------------------------------------------------------------
+# Colormaps
+# ---------------------------------------------------------------------------
 seqCmap = sns.color_palette("mako", as_cmap=True)
-divCmap = sns.cubehelix_palette(start=.5, rot=-.5, as_cmap=True)
-lightCmap = sns.cubehelix_palette(start=2, rot=0, dark=0, light=.95, reverse=True, as_cmap=True)
+divCmap = sns.cubehelix_palette(start=0.5, rot=-0.5, as_cmap=True)
+lightCmap = sns.cubehelix_palette(
+    start=2, rot=0, dark=0, light=0.95, reverse=True, as_cmap=True
+)
 
-# --- Simulation Parameters ---
-ANIMATION_INTERVAL = 50  # Milliseconds between frames for 60 FPS target
+# ---------------------------------------------------------------------------
+# Defaults
+# ---------------------------------------------------------------------------
 DEFAULT_COOPERATIVITY = 1e5
-SURFACE_RESOLUTION = 50  # Resolution of 3D surface mesh
+SURFACE_RESOLUTION = 50
+ANIMATION_INTERVAL = 80  # ms
 
+
+# =========================================================================
+# Model
+# =========================================================================
 
 class QuantumLDPCThresholdModel:
-    """
-    Model for quantum LDPC threshold behavior and scaling analysis
-    """
+    """Model for quantum LDPC threshold behaviour and scaling analysis."""
+
+    FAMILY_NAMES = [
+        "Surface Codes",
+        "Hypergraph Product",
+        "Quantum Tanner (Breakthrough)",
+    ]
+    MODE_NAMES = ["Error Threshold Landscape", "Distance Scaling Analysis"]
+
     def __init__(self):
-        # Code parameter ranges with safe positive values for log scaling
-        self.code_lengths = np.logspace(2, 4, SURFACE_RESOLUTION)  # 100 to 10,000 qubits
-        self.physical_error_rates = np.logspace(-4, -1, SURFACE_RESOLUTION)  # 0.01% to 10%
-        self.distances = np.logspace(1, 3, SURFACE_RESOLUTION)  # Distance 10 to 1000
-        
-        # Model parameters
         self.cooperativity = DEFAULT_COOPERATIVITY
-        self.code_family = 0  # 0: Surface, 1: Hypergraph Product, 2: Quantum Tanner
-        self.visualization_mode = 0  # 0: Threshold Surface, 1: Scaling Analysis
-        
-        # Performance tracking
-        self.frame_times = deque(maxlen=30)
-        
+        self.code_family = 0
+        self.visualization_mode = 0
+
     def calculate_threshold_surface(self):
-        """Calculate 3D threshold surface: (physical_error, distance) -> logical_error"""
-        # Create meshgrids with better spacing for 3D visualization
-        p_range = np.linspace(0.001, 0.1, SURFACE_RESOLUTION)  # 0.1% to 10% error rates
-        d_range = np.linspace(10, 100, SURFACE_RESOLUTION)      # Distance 10 to 100
-        P, D = np.meshgrid(p_range, d_range)
-        
-        if self.code_family == 0:  # Surface codes
-            # Surface code: distance ~ sqrt(n), threshold ~ 0.5%
-            threshold = 0.005
-            scaling_exponent = (D + 1) / 2
-            
-        elif self.code_family == 1:  # Hypergraph product codes
-            # Hypergraph: distance ~ sqrt(n log n), threshold ~ 1%
-            threshold = 0.01
-            scaling_exponent = (D * np.log(D + 1) + 1) / 2
-            
-        else:  # Quantum Tanner codes (breakthrough!)
-            # Quantum Tanner: distance ~ n, threshold ~ 3%
-            threshold = 0.03
-            scaling_exponent = D  # Linear scaling breakthrough!
-        
-        # Threshold behavior model with better 3D structure
-        Z = np.zeros_like(P)
-        
-        # Below threshold: exponential suppression
-        below_threshold = P < threshold
-        Z[below_threshold] = np.exp(-scaling_exponent[below_threshold] * (threshold - P[below_threshold]) / threshold)
-        
-        # Above threshold: polynomial growth
-        above_threshold = P >= threshold
-        Z[above_threshold] = (P[above_threshold] / threshold) ** 0.5
-        
-        # Add cooperativity effects for cavity-mediated implementation
-        cavity_factor = max(0.1, 1 - 1/self.cooperativity)  # Ensure reasonable range
-        Z *= cavity_factor
-        
-        # Scale Z to have good 3D visibility (not too flat)
-        Z = Z * 10 + 0.01  # Scale up and add offset
-        
+        p = np.linspace(0.001, 0.1, SURFACE_RESOLUTION)
+        d = np.linspace(10, 100, SURFACE_RESOLUTION)
+        P, D = np.meshgrid(p, d)
+
+        thresholds = [0.005, 0.01, 0.03]
+        th = thresholds[self.code_family]
+
+        if self.code_family == 0:
+            exp = (D + 1) / 2
+        elif self.code_family == 1:
+            exp = (D * np.log(D + 1) + 1) / 2
+        else:
+            exp = D
+
+        Z = np.where(
+            P < th,
+            np.exp(-exp * (th - P) / th),
+            (P / th) ** 0.5,
+        )
+        cavity = max(0.1, 1 - 1 / self.cooperativity)
+        Z = Z * cavity * 10 + 0.01
         return P, D, Z
-    
+
     def calculate_scaling_surface(self):
-        """Calculate 3D scaling surface: (code_length, rate) -> distance"""
-        # Use linear ranges for better 3D visualization
-        n_range = np.linspace(100, 1000, SURFACE_RESOLUTION)    # Code lengths
-        r_range = np.linspace(0.1, 0.9, SURFACE_RESOLUTION)    # Code rates
-        N, R = np.meshgrid(n_range, r_range)
-        
-        if self.code_family == 0:  # Surface codes
-            # Surface: d ~ sqrt(n), rate ~ 1/n
-            Z = np.sqrt(N) * (1.1 - R) * 0.5  # Scale for better visibility
-            
-        elif self.code_family == 1:  # Hypergraph product codes
-            # Hypergraph: d ~ sqrt(n log n), moderate rate
+        n = np.linspace(100, 1000, SURFACE_RESOLUTION)
+        r = np.linspace(0.1, 0.9, SURFACE_RESOLUTION)
+        N, R = np.meshgrid(n, r)
+
+        if self.code_family == 0:
+            Z = np.sqrt(N) * (1.1 - R) * 0.5
+        elif self.code_family == 1:
             Z = np.sqrt(N * np.log(N + 1)) * (1.1 - R) * 0.3
-            
-        else:  # Quantum Tanner codes (breakthrough!)
-            # Quantum Tanner: d ~ n (linear!), constant rate
-            Z = N * 0.15 * (1.2 - R)  # Linear distance with good rate
-        
-        # Ensure all values are positive and have good range
-        Z = np.maximum(Z, 5.0)  # Minimum distance of 5
-        
+        else:
+            Z = N * 0.15 * (1.2 - R)
+
+        Z = np.maximum(Z, 5.0)
         return N, R, Z
-    
-    def get_code_family_name(self):
-        """Get human-readable code family name"""
-        names = ["Surface Codes", "Hypergraph Product", "Quantum Tanner (Breakthrough)"]
-        return names[self.code_family]
-    
-    def get_visualization_mode_name(self):
-        """Get human-readable visualization mode name"""
-        modes = ["Error Threshold Landscape", "Distance Scaling Analysis"]
-        return modes[self.visualization_mode]
 
 
-class ThresholdLandscape3D:
-    """Interactive 3D threshold landscape visualization"""
-    
-    def __init__(self, threshold_model):
-        self.model = threshold_model
-        
-        # Animation state (initialize before setup_figure)
-        self.rotation_speed = 1.0
+# =========================================================================
+# GUI
+# =========================================================================
+
+class ThresholdLandscape3DGUI:
+    """Tkinter dark-mode GUI with embedded 3D threshold landscape."""
+
+    TITLE = "3D Quantum LDPC Threshold Landscape"
+
+    def __init__(self, model=None):
+        self.model = model or QuantumLDPCThresholdModel()
+        self.azimuth = 45.0
+        self.elevation = 30.0
         self.auto_rotate = True
-        self.azimuth = 45
-        self.elevation = 30
-        
-        # Track when redraw is needed
-        self.need_redraw = True
-        self.last_parameters = None
-        self.surface_object = None  # Store the surface object
-        
-        self.setup_figure()
-        self.setup_controls()
-        
-        # Performance tracking
-        self.frame_count = 0
-        self.start_time = time.time()
-        
-        # Initial drawing
-        self.draw_3d_surface()
-        self.draw_info_panel()
-        
-    def setup_figure(self):
-        """Setup the main 3D figure and axis"""
-        self.fig = plt.figure(figsize=(16, 12))
-        
-        # Create layout with more space for 3D plot and controls at bottom
-        gs = self.fig.add_gridspec(2, 1, height_ratios=[4, 1], hspace=0.3, bottom=0.15)
-        
-        # Main 3D plot
-        self.ax_3d = self.fig.add_subplot(gs[0], projection='3d')
-        self.ax_3d.set_title("3D Quantum LDPC Threshold Landscape\nBreakthrough Linear Distance Scaling", 
-                            fontsize=16, fontweight='bold', pad=20)
-        
-        # Info panel
-        self.ax_info = self.fig.add_subplot(gs[1])
-        self.ax_info.axis('off')
-        
-        # Set initial 3D view
-        self.ax_3d.view_init(elev=self.elevation, azim=self.azimuth)
-        
-    def setup_controls(self):
-        """Setup interactive controls"""
-        control_y = 0.02
-        control_height = 0.03
-        
-        # Sliders
-        ax_coop = plt.axes([0.1, control_y + 0.04, 0.15, control_height])
-        self.slider_coop = Slider(ax_coop, 'Cooperativity', 1e3, 1e6, 
-                                 valinit=DEFAULT_COOPERATIVITY, valstep=1e3,
-                                 valfmt='%.0e')
-        self.slider_coop.on_changed(self.update_cooperativity)
-        
-        ax_rotation = plt.axes([0.3, control_y + 0.04, 0.15, control_height])
-        self.slider_rotation = Slider(ax_rotation, 'Rotation Speed', 0, 5, 
-                                     valinit=1.0, valfmt='%.1f')
-        self.slider_rotation.on_changed(self.update_rotation_speed)
-        
-        # Buttons
-        button_width = 0.08
-        button_spacing = 0.01
-        start_x = 0.5
-        
-        ax_family = plt.axes([start_x, control_y + 0.04, button_width, control_height])
-        self.btn_family = Button(ax_family, 'Code Family')
-        self.btn_family.on_clicked(self.cycle_code_family)
-        
-        ax_mode = plt.axes([start_x + button_width + button_spacing, control_y + 0.04, button_width, control_height])
-        self.btn_mode = Button(ax_mode, 'View Mode')
-        self.btn_mode.on_clicked(self.cycle_view_mode)
-        
-        ax_rotate = plt.axes([start_x + 2*(button_width + button_spacing), control_y + 0.04, button_width, control_height])
-        self.btn_rotate = Button(ax_rotate, 'Auto Rotate')
-        self.btn_rotate.on_clicked(self.toggle_auto_rotate)
-        
-        # Checkboxes
-        ax_check = plt.axes([0.8, control_y, 0.15, 0.08])
-        self.checkbox = CheckButtons(ax_check, ['Wireframe', 'Colorbar', 'Grid'], [False, True, True])
-        self.checkbox.on_clicked(self.on_checkbox_toggle)
-    
-    def on_checkbox_toggle(self, label):
-        """Handle checkbox toggles"""
-        self.need_redraw = True
-        
-    def update_cooperativity(self, val):
-        """Update cavity cooperativity"""
-        self.model.cooperativity = val
-        self.need_redraw = True
-    
-    def update_rotation_speed(self, val):
-        """Update rotation speed"""
-        self.rotation_speed = val
-    
-    def cycle_code_family(self, event):
-        """Cycle through different code families"""
-        self.model.code_family = (self.model.code_family + 1) % 3
-        self.need_redraw = True
-    
-    def cycle_view_mode(self, event):
-        """Cycle through visualization modes"""
-        self.model.visualization_mode = (self.model.visualization_mode + 1) % 2
-        self.need_redraw = True
-    
-    def toggle_auto_rotate(self, event):
-        """Toggle automatic rotation"""
-        self.auto_rotate = not self.auto_rotate
-        self.btn_rotate.label.set_text('Stop Rotate' if self.auto_rotate else 'Auto Rotate')
-    
-    def draw_3d_surface(self):
-        """Draw the main 3D surface without destroying the view"""
-        # Calculate surface data based on current mode
+        self.rotation_speed = 1.0
+        self.show_wireframe = False
+        self.show_grid = True
+        self._needs_redraw = True
+        self._colorbar = None
+
+        self.root = tk.Tk()
+        self.root.title(self.TITLE)
+        self.root.geometry("1320x860")
+        self.root.minsize(960, 640)
+        self.style = apply_dark_theme(self.root)
+
+        self._build_ui()
+        self._animate()
+
+    # -- UI -----------------------------------------------------------------
+
+    def _build_ui(self):
+        outer = ttk.Frame(self.root, style="Dark.TFrame")
+        outer.pack(fill=tk.BOTH, expand=True)
+        self._build_controls(outer)
+        self._build_canvas(outer)
+
+    def _build_controls(self, parent):
+        ctrl = ttk.Frame(parent, style="Dark.TFrame", width=260)
+        ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0), pady=8)
+        ctrl.pack_propagate(False)
+
+        ttk.Label(ctrl, text="Threshold 3D", style="Title.TLabel").pack(
+            anchor=tk.W, pady=(0, 8)
+        )
+
+        # --- Cavity QED ----------------------------------------------------
+        cav = ttk.LabelFrame(ctrl, text="Cavity QED", style="Dark.TLabelframe")
+        cav.pack(fill=tk.X, pady=4)
+
+        ttk.Label(cav, text="Cooperativity (C)", style="Dark.TLabel").pack(
+            anchor=tk.W, padx=4
+        )
+        self.coop_var = tk.DoubleVar(value=5.0)
+        ttk.Scale(
+            cav, from_=3.0, to=6.0, variable=self.coop_var,
+            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            command=self._on_coop,
+        ).pack(fill=tk.X, padx=4, pady=2)
+        self.coop_label = ttk.Label(cav, text="C = 1.00e+05", style="Accent.TLabel")
+        self.coop_label.pack(anchor=tk.W, padx=4, pady=(0, 4))
+
+        # --- Code family ---------------------------------------------------
+        fam = ttk.LabelFrame(ctrl, text="Code Family", style="Dark.TLabelframe")
+        fam.pack(fill=tk.X, pady=4)
+
+        self.family_var = tk.IntVar(value=0)
+        for i, name in enumerate(self.model.FAMILY_NAMES):
+            ttk.Radiobutton(
+                fam, text=name, variable=self.family_var, value=i,
+                style="Dark.TRadiobutton", command=self._on_family,
+            ).pack(anchor=tk.W, padx=4)
+        self.family_insight = ttk.Label(fam, text="d ~ sqrt(n), R ~ 1/n", style="Subtitle.TLabel")
+        self.family_insight.pack(anchor=tk.W, padx=4, pady=(2, 4))
+
+        # --- View mode -----------------------------------------------------
+        vm = ttk.LabelFrame(ctrl, text="View Mode", style="Dark.TLabelframe")
+        vm.pack(fill=tk.X, pady=4)
+
+        self.mode_var = tk.IntVar(value=0)
+        for i, name in enumerate(self.model.MODE_NAMES):
+            ttk.Radiobutton(
+                vm, text=name, variable=self.mode_var, value=i,
+                style="Dark.TRadiobutton", command=self._on_mode,
+            ).pack(anchor=tk.W, padx=4)
+
+        # --- Display -------------------------------------------------------
+        disp = ttk.LabelFrame(ctrl, text="Display", style="Dark.TLabelframe")
+        disp.pack(fill=tk.X, pady=4)
+
+        self.wire_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(disp, text="Wireframe", variable=self.wire_var,
+                        style="Dark.TCheckbutton",
+                        command=self._mark_redraw).pack(anchor=tk.W, padx=4)
+
+        self.grid_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(disp, text="Grid", variable=self.grid_var,
+                        style="Dark.TCheckbutton",
+                        command=self._mark_redraw).pack(anchor=tk.W, padx=4)
+
+        self.rotate_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(disp, text="Auto Rotate", variable=self.rotate_var,
+                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+
+        ttk.Label(disp, text="Rotation Speed", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
+        self.speed_var = tk.DoubleVar(value=1.0)
+        ttk.Scale(
+            disp, from_=0.0, to=5.0, variable=self.speed_var,
+            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+        ).pack(fill=tk.X, padx=4, pady=(2, 4))
+
+        # --- Info ----------------------------------------------------------
+        info = ttk.LabelFrame(ctrl, text="Insight", style="Dark.TLabelframe")
+        info.pack(fill=tk.X, pady=4, expand=True)
+
+        self.info_text = tk.Text(
+            info, height=5, wrap=tk.WORD,
+            bg=DARK_INPUT, fg=DARK_ACCENT, insertbackground=DARK_ACCENT,
+            font=("Consolas", 9), relief=tk.FLAT, bd=0,
+        )
+        self.info_text.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
+        self._refresh_insight()
+
+        ttk.Label(
+            ctrl, text="Drag to rotate | Scroll to zoom",
+            style="Subtitle.TLabel", wraplength=240,
+        ).pack(anchor=tk.W, pady=(8, 0))
+
+    def _build_canvas(self, parent):
+        frame = ttk.Frame(parent, style="Dark.TFrame")
+        frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=8, pady=8)
+
+        self.fig = Figure(figsize=(10, 8), facecolor=DARK_BG)
+        self.ax = self.fig.add_subplot(111, projection="3d")
+        configure_dark_3d_axes(self.ax)
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=frame)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        self.canvas.mpl_connect("scroll_event", self._on_scroll)
+        self.canvas.mpl_connect("button_press_event", self._on_click)
+
+    # -- callbacks ----------------------------------------------------------
+
+    def _on_coop(self, val):
+        C = 10 ** float(val)
+        self.model.cooperativity = C
+        self.coop_label.configure(text=f"C = {C:.2e}")
+        self._mark_redraw()
+
+    def _on_family(self):
+        self.model.code_family = self.family_var.get()
+        self._refresh_insight()
+        self._mark_redraw()
+
+    def _on_mode(self):
+        self.model.visualization_mode = self.mode_var.get()
+        self._mark_redraw()
+
+    def _mark_redraw(self):
+        self._needs_redraw = True
+
+    def _on_scroll(self, event):
+        if event.inaxes == self.ax:
+            factor = 0.9 if event.step > 0 else 1.1
+            for getter, setter in [
+                (self.ax.get_xlim, self.ax.set_xlim),
+                (self.ax.get_ylim, self.ax.set_ylim),
+                (self.ax.get_zlim, self.ax.set_zlim),
+            ]:
+                lo, hi = getter()
+                c = (lo + hi) / 2
+                r = (hi - lo) * factor / 2
+                setter([c - r, c + r])
+
+    def _on_click(self, event):
+        if event.inaxes == self.ax:
+            self.rotate_var.set(False)
+
+    def _refresh_insight(self):
+        insights = [
+            "Surface codes:\n  d ~ sqrt(n)\n  R ~ 1/n\n  Threshold ~ 0.5%\n  Traditional approach",
+            "Hypergraph product:\n  d ~ sqrt(n log n)\n  R = const\n  Threshold ~ 1%\n  Improved scaling",
+            "Quantum Tanner:\n  d ~ n (LINEAR!)\n  R = const\n  Threshold ~ 3%\n  2022 breakthrough!",
+        ]
+        self.info_text.configure(state=tk.NORMAL)
+        self.info_text.delete("1.0", tk.END)
+        self.info_text.insert(tk.END, insights[self.model.code_family])
+        self.info_text.configure(state=tk.DISABLED)
+
+        scaling_labels = ["d ~ sqrt(n), R ~ 1/n", "d ~ sqrt(n log n), R = const", "d ~ n, R = const  (BREAKTHROUGH)"]
+        self.family_insight.configure(text=scaling_labels[self.model.code_family])
+
+    # -- drawing ------------------------------------------------------------
+
+    def _draw_surface(self):
+        stored_elev = self.ax.elev if hasattr(self.ax, "elev") else self.elevation
+        stored_azim = self.ax.azim if hasattr(self.ax, "azim") else self.azimuth
+
+        self.ax.clear()
+        self.ax.set_facecolor(DARK_AXES)
+
         if self.model.visualization_mode == 0:
             X, Y, Z = self.model.calculate_threshold_surface()
-            xlabel = 'Physical Error Rate'
-            ylabel = 'Code Distance'
-            zlabel = 'Logical Error Rate'
+            xl, yl, zl = "Physical Error Rate", "Code Distance", "Logical Error Rate"
         else:
             X, Y, Z = self.model.calculate_scaling_surface()
-            xlabel = 'Code Length (n)'
-            ylabel = 'Code Rate (k/n)'
-            zlabel = 'Distance (d)'
-        
-        # Get checkbox states
-        wireframe = self.checkbox.get_status()[0] if hasattr(self, 'checkbox') else False
-        show_colorbar = self.checkbox.get_status()[1] if hasattr(self, 'checkbox') else True
-        show_grid = self.checkbox.get_status()[2] if hasattr(self, 'checkbox') else True
-        
-        # Choose colormap based on code family
-        if self.model.code_family == 0:
-            cmap = lightCmap
-        elif self.model.code_family == 1:
-            cmap = divCmap
-        else:
-            cmap = seqCmap
-        
-        # Only clear the axes if we need to redraw (parameters changed)
-        # This prevents the view from jumping around
-        if self.need_redraw or not hasattr(self, 'surface_object') or self.surface_object is None:
-            # Store current view if axes exist and have been used
-            if hasattr(self.ax_3d, 'elev') and hasattr(self.ax_3d, 'azim'):
-                stored_elev = self.ax_3d.elev
-                stored_azim = self.ax_3d.azim
-            else:
-                stored_elev = self.elevation
-                stored_azim = self.azimuth
-            
-            # Clear the axes only when necessary
-            self.ax_3d.clear()
-            
-            # Draw surface with proper 3D settings
-            if wireframe:
-                self.surface_object = self.ax_3d.plot_wireframe(X, Y, Z, cmap=cmap, alpha=0.7, linewidth=1)
-            else:
-                self.surface_object = self.ax_3d.plot_surface(X, Y, Z, cmap=cmap, alpha=0.8, 
-                                                linewidth=0, antialiased=True, shade=True)
-            
-            # Add colorbar (with proper error handling)
-            if show_colorbar and not wireframe:
-                # Remove existing colorbar safely
-                if hasattr(self, 'colorbar') and self.colorbar is not None:
-                    try:
-                        self.colorbar.remove()
-                    except (AttributeError, ValueError):
-                        pass  # Ignore removal errors
-                
-                # Create new colorbar
-                try:
-                    self.colorbar = self.fig.colorbar(self.surface_object, ax=self.ax_3d, shrink=0.5, aspect=30)
-                    self.colorbar.set_label(zlabel, fontsize=12)
-                except Exception:
-                    # If colorbar creation fails, skip it
-                    pass
-            
-            # Set labels and title
-            self.ax_3d.set_xlabel(xlabel, fontsize=12, labelpad=10)
-            self.ax_3d.set_ylabel(ylabel, fontsize=12, labelpad=10)
-            self.ax_3d.set_zlabel(zlabel, fontsize=12, labelpad=10)
-            
-            # Update title with current settings
-            family_name = self.model.get_code_family_name()
-            mode_name = self.model.get_visualization_mode_name()
-            title = f"3D {mode_name}\n{family_name}"
-            self.ax_3d.set_title(title, fontsize=14, fontweight='bold', pad=20)
-            
-            # Grid
-            self.ax_3d.grid(show_grid, alpha=0.3)
-            
-            # Set proper 3D aspect ratio and limits to prevent collapse
-            x_min, x_max = np.min(X), np.max(X)
-            y_min, y_max = np.min(Y), np.max(Y) 
-            z_min, z_max = np.min(Z), np.max(Z)
-            
-            # Add some padding to prevent edge clipping
-            x_pad = (x_max - x_min) * 0.1
-            y_pad = (y_max - y_min) * 0.1
-            z_pad = (z_max - z_min) * 0.1
-            
-            self.ax_3d.set_xlim([x_min - x_pad, x_max + x_pad])
-            self.ax_3d.set_ylim([y_min - y_pad, y_max + y_pad])
-            self.ax_3d.set_zlim([z_min - z_pad, z_max + z_pad])
-            
-            # Set equal aspect ratio for all axes
-            self.ax_3d.set_box_aspect([1, 1, 0.8])  # Slightly flatten Z for better viewing
-            
-            # Restore the view
-            self.ax_3d.view_init(elev=stored_elev, azim=stored_azim)
-            
-            # Reset the redraw flag
-            self.need_redraw = False
-    
-    def draw_info_panel(self):
-        """Draw information panel with clean, refined text"""
-        self.ax_info.clear()
-        self.ax_info.axis('off')
-        
-        # Performance info
-        current_time = time.time()
-        if hasattr(self, 'start_time') and current_time > self.start_time:
-            fps = self.frame_count / (current_time - self.start_time)
-            self.model.frame_times.append(current_time)
-        else:
-            fps = 0
-        
-        # Current parameters display (compact and clean)
-        family_name = self.model.get_code_family_name()
-        mode_name = self.model.get_visualization_mode_name()
-        
-        param_text = (
-            f"Mode: {mode_name} • Family: {family_name} • "
-            f"Cooperativity: C = {self.model.cooperativity:.0e} • "
-            f"Performance: {fps:.1f} FPS"
-        )
-        
-        self.ax_info.text(0.5, 0.7, param_text, ha='center', va='center',
-                         transform=self.ax_info.transAxes, fontsize=11,
-                         bbox=dict(boxstyle='round,pad=0.5', facecolor=lightCmap(0.05), alpha=0.8))
-        
-        # Instructions (compact)
-        instructions = (
-            "Drag to rotate • Scroll to zoom • Sliders adjust parameters • "
-            "Buttons cycle through families/modes • Auto Rotate for smooth animation"
-        )
-        
-        self.ax_info.text(0.5, 0.3, instructions, ha='center', va='center',
-                         transform=self.ax_info.transAxes, fontsize=10,
-                         style='italic', color='darkblue')
-        
-        # Key insights for current family (very compact)
-        if self.model.code_family == 0:
-            insight = "Surface: d ∼ √n, R ∼ 1/n (Traditional)"
-        elif self.model.code_family == 1:
-            insight = "Hypergraph: d ∼ √(n log n), R = const (Improved)"
-        else:
-            insight = "Quantum Tanner: d ∼ n, R = const (BREAKTHROUGH!)"
-        
-        color = 'darkgreen' if self.model.code_family == 2 else 'darkblue'
-        self.ax_info.text(0.02, 0.1, insight, ha='left', va='center',
-                         transform=self.ax_info.transAxes, fontsize=10,
-                         color=color, fontweight='bold')
-    
-    def update(self, frame):
-        """Animation update function - only redraws when necessary"""
-        # Check if parameters have changed and redraw is needed
-        current_parameters = (
-            self.model.code_family,
-            self.model.visualization_mode,
-            self.model.cooperativity
-        )
-        
-        if self.need_redraw or current_parameters != self.last_parameters:
-            # Only redraw the surface when parameters change
-            self.draw_3d_surface()
-            self.last_parameters = current_parameters
-        
-        # Auto-rotation (this doesn't require redrawing the surface)
-        if self.auto_rotate:
-            self.azimuth += self.rotation_speed
-            self.ax_3d.view_init(elev=self.elevation, azim=self.azimuth)
-        
-        # Update info panel every frame (lightweight)
-        self.draw_info_panel()
-        
-        # Update frame counter
-        self.frame_count += 1
-        
-        return []
-    
-    def run(self):
-        """Start the interactive 3D visualization"""
-        ani = animation.FuncAnimation(self.fig, self.update, blit=False, 
-                                    interval=ANIMATION_INTERVAL, cache_frame_data=False)
-        
-        # Enable 3D interaction
-        self.fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
-        self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
-        
-        plt.subplots_adjust(left=0.05, bottom=0.15, right=0.95, top=0.9, hspace=0.3)
-        plt.show()
-    
-    def on_mouse_move(self, event):
-        """Handle mouse movement for manual rotation"""
-        if event.inaxes == self.ax_3d and event.button == 1:  # Left mouse button
-            # Disable auto-rotation when manually rotating
-            self.auto_rotate = False
-            self.btn_rotate.label.set_text('Auto Rotate')
-    
-    def on_scroll(self, event):
-        """Handle mouse scroll for zooming"""
-        if event.inaxes == self.ax_3d:
-            # Let matplotlib handle the zoom
-            pass
+            xl, yl, zl = "Code Length (n)", "Code Rate (k/n)", "Distance (d)"
 
+        cmaps = [lightCmap, divCmap, seqCmap]
+        cmap = cmaps[self.model.code_family]
+
+        if self.wire_var.get():
+            self.ax.plot_wireframe(X, Y, Z, color=DARK_ACCENT, alpha=0.6, linewidth=0.7)
+        else:
+            surf = self.ax.plot_surface(
+                X, Y, Z, cmap=cmap, alpha=0.85,
+                linewidth=0, antialiased=True, shade=True,
+            )
+            # Colorbar
+            if self._colorbar is not None:
+                try:
+                    self._colorbar.remove()
+                except Exception:
+                    pass
+            try:
+                self._colorbar = self.fig.colorbar(surf, ax=self.ax, shrink=0.45, aspect=25, pad=0.08)
+                self._colorbar.set_label(zl, fontsize=10, color=DARK_TEXT)
+                self._colorbar.ax.tick_params(colors=DARK_SUBTITLE)
+            except Exception:
+                self._colorbar = None
+
+        self.ax.set_xlabel(xl, color=DARK_SUBTITLE, fontsize=10, labelpad=8)
+        self.ax.set_ylabel(yl, color=DARK_SUBTITLE, fontsize=10, labelpad=8)
+        self.ax.set_zlabel(zl, color=DARK_SUBTITLE, fontsize=10, labelpad=8)
+        self.ax.tick_params(colors=DARK_SUBTITLE)
+
+        family = self.model.FAMILY_NAMES[self.model.code_family]
+        mode = self.model.MODE_NAMES[self.model.visualization_mode]
+        self.ax.set_title(
+            f"{mode}\n{family}",
+            color=DARK_TEXT, fontweight="bold", fontsize=13,
+        )
+
+        for pane in (self.ax.xaxis.pane, self.ax.yaxis.pane, self.ax.zaxis.pane):
+            pane.set_facecolor(DARK_BG)
+            pane.set_edgecolor(DARK_EDGE)
+
+        self.ax.grid(self.grid_var.get(), color=DARK_GRID, alpha=0.25)
+        self.ax.set_box_aspect([1, 1, 0.8])
+
+        pad = 0.1
+        for arr, setter in [(X, self.ax.set_xlim), (Y, self.ax.set_ylim), (Z, self.ax.set_zlim)]:
+            lo, hi = np.min(arr), np.max(arr)
+            p = (hi - lo) * pad
+            setter([lo - p, hi + p])
+
+        self.ax.view_init(elev=stored_elev, azim=stored_azim)
+        self._needs_redraw = False
+
+    # -- animation ----------------------------------------------------------
+
+    def _animate(self):
+        if self._needs_redraw:
+            self._draw_surface()
+
+        if self.rotate_var.get():
+            self.azimuth += self.speed_var.get()
+            self.ax.view_init(elev=self.elevation, azim=self.azimuth)
+
+        self.canvas.draw_idle()
+        self.root.after(ANIMATION_INTERVAL, self._animate)
+
+    # -- public API ---------------------------------------------------------
+
+    def run(self):
+        self.root.mainloop()
+
+    def save_screenshot(self, path=None):
+        if path is None:
+            plots_dir = os.path.join(os.path.dirname(__file__), "..", "..", "Plots")
+            os.makedirs(plots_dir, exist_ok=True)
+            path = os.path.join(plots_dir, "threshold_landscape_3d.png")
+        self.fig.savefig(path, dpi=150, facecolor=DARK_BG, edgecolor="none")
+
+
+# =========================================================================
+# Entry point
+# =========================================================================
 
 def main():
     """Entry point for the 3D threshold landscape visualizer."""
-    print("--- Starting 3D Quantum LDPC Threshold Landscape Visualizer ---")
-    print("Revolutionary linear distance scaling visualization in 3D")
-    print("Based on breakthrough 2020-2022 quantum LDPC constructions")
-    print("\nInteractive Features:")
-    print("  Drag to rotate the 3D landscape")
-    print("  Scroll to zoom in/out")
-    print("  Cycle through code families (Surface -> Hypergraph -> Quantum Tanner)")
-    print("  Switch between threshold and scaling analysis modes")
-    print("  Adjust cavity cooperativity for gate fidelity effects")
-    print("  Auto-rotation with adjustable speed")
-
-    threshold_model = QuantumLDPCThresholdModel()
-    visualizer = ThresholdLandscape3D(threshold_model)
-    visualizer.run()
-
-    print("--- 3D Visualization window closed ---")
+    print("Starting 3D Quantum LDPC Threshold Landscape")
+    print("Drag to rotate | Scroll to zoom | Radio buttons to switch")
+    model = QuantumLDPCThresholdModel()
+    gui = ThresholdLandscape3DGUI(model)
+    gui.run()
 
 
 if __name__ == "__main__":

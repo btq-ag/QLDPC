@@ -1,0 +1,3 @@
+# Config
+
+::: qldpc.config
