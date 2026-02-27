@@ -300,7 +300,7 @@ For classical LDPC codes, BP achieves near-optimal decoding. For quantum codes, 
 |---------|-------------|
 | [TQNN](https://github.com/IsolatedSingularity/Topological-Quantum-Neural-Networks) | Topological Quantum Neural Networks: interactive visualization toolkit |
 | [Bloc-Fantome](https://github.com/IsolatedSingularity/Bloc-Fantome) | Phantom block decoding experiments |
-| [Leonne](https://github.com/btq-ag/Leonne) | BTQ hardware characterization and benchmarking |
+| [Leonne](https://github.com/btq-ag/Leonne) | Modular consensus networks |
 | [QRiNG](https://github.com/btq-ag/QRiNG) | Quantum random number generation framework |
 
 ---
