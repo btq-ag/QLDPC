@@ -13,23 +13,29 @@ Usage:
 """
 
 import matplotlib
+
 matplotlib.use("TkAgg")
 
+import os
 import tkinter as tk
 from tkinter import ttk
-import numpy as np
-import os
-import seaborn as sns
 
-from matplotlib.figure import Figure
+import numpy as np
+import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from qldpc.theme import (
-    DARK_BG, DARK_PANEL, DARK_AXES, DARK_TEXT, DARK_SUBTITLE,
-    DARK_ACCENT, DARK_ACCENT_ALT, DARK_GRID, DARK_EDGE,
+    DARK_ACCENT,
+    DARK_AXES,
+    DARK_BG,
+    DARK_EDGE,
+    DARK_GRID,
     DARK_INPUT,
-    COLOR_SUCCESS, COLOR_ERROR,
-    apply_dark_theme, configure_dark_3d_axes,
+    DARK_SUBTITLE,
+    DARK_TEXT,
+    apply_dark_theme,
+    configure_dark_3d_axes,
 )
 
 # ---------------------------------------------------------------------------
@@ -37,9 +43,7 @@ from qldpc.theme import (
 # ---------------------------------------------------------------------------
 seqCmap = sns.color_palette("mako", as_cmap=True)
 divCmap = sns.cubehelix_palette(start=0.5, rot=-0.5, as_cmap=True)
-lightCmap = sns.cubehelix_palette(
-    start=2, rot=0, dark=0, light=0.95, reverse=True, as_cmap=True
-)
+lightCmap = sns.cubehelix_palette(start=2, rot=0, dark=0, light=0.95, reverse=True, as_cmap=True)
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -52,6 +56,7 @@ ANIMATION_INTERVAL = 80  # ms
 # =========================================================================
 # Model
 # =========================================================================
+
 
 class QuantumLDPCThresholdModel:
     """Model for quantum LDPC threshold behaviour and scaling analysis."""
@@ -112,6 +117,7 @@ class QuantumLDPCThresholdModel:
 # GUI
 # =========================================================================
 
+
 class ThresholdLandscape3DGUI:
     """Tkinter dark-mode GUI with embedded 3D threshold landscape."""
 
@@ -150,21 +156,21 @@ class ThresholdLandscape3DGUI:
         ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0), pady=8)
         ctrl.pack_propagate(False)
 
-        ttk.Label(ctrl, text="Threshold 3D", style="Title.TLabel").pack(
-            anchor=tk.W, pady=(0, 8)
-        )
+        ttk.Label(ctrl, text="Threshold 3D", style="Title.TLabel").pack(anchor=tk.W, pady=(0, 8))
 
         # --- Cavity QED ----------------------------------------------------
         cav = ttk.LabelFrame(ctrl, text="Cavity QED", style="Dark.TLabelframe")
         cav.pack(fill=tk.X, pady=4)
 
-        ttk.Label(cav, text="Cooperativity (C)", style="Dark.TLabel").pack(
-            anchor=tk.W, padx=4
-        )
+        ttk.Label(cav, text="Cooperativity (C)", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
         self.coop_var = tk.DoubleVar(value=5.0)
         ttk.Scale(
-            cav, from_=3.0, to=6.0, variable=self.coop_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            cav,
+            from_=3.0,
+            to=6.0,
+            variable=self.coop_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
             command=self._on_coop,
         ).pack(fill=tk.X, padx=4, pady=2)
         self.coop_label = ttk.Label(cav, text="C = 1.00e+05", style="Accent.TLabel")
@@ -177,8 +183,12 @@ class ThresholdLandscape3DGUI:
         self.family_var = tk.IntVar(value=0)
         for i, name in enumerate(self.model.FAMILY_NAMES):
             ttk.Radiobutton(
-                fam, text=name, variable=self.family_var, value=i,
-                style="Dark.TRadiobutton", command=self._on_family,
+                fam,
+                text=name,
+                variable=self.family_var,
+                value=i,
+                style="Dark.TRadiobutton",
+                command=self._on_family,
             ).pack(anchor=tk.W, padx=4)
         self.family_insight = ttk.Label(fam, text="d ~ sqrt(n), R ~ 1/n", style="Subtitle.TLabel")
         self.family_insight.pack(anchor=tk.W, padx=4, pady=(2, 4))
@@ -190,8 +200,12 @@ class ThresholdLandscape3DGUI:
         self.mode_var = tk.IntVar(value=0)
         for i, name in enumerate(self.model.MODE_NAMES):
             ttk.Radiobutton(
-                vm, text=name, variable=self.mode_var, value=i,
-                style="Dark.TRadiobutton", command=self._on_mode,
+                vm,
+                text=name,
+                variable=self.mode_var,
+                value=i,
+                style="Dark.TRadiobutton",
+                command=self._on_mode,
             ).pack(anchor=tk.W, padx=4)
 
         # --- Display -------------------------------------------------------
@@ -199,24 +213,37 @@ class ThresholdLandscape3DGUI:
         disp.pack(fill=tk.X, pady=4)
 
         self.wire_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(disp, text="Wireframe", variable=self.wire_var,
-                        style="Dark.TCheckbutton",
-                        command=self._mark_redraw).pack(anchor=tk.W, padx=4)
+        ttk.Checkbutton(
+            disp,
+            text="Wireframe",
+            variable=self.wire_var,
+            style="Dark.TCheckbutton",
+            command=self._mark_redraw,
+        ).pack(anchor=tk.W, padx=4)
 
         self.grid_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(disp, text="Grid", variable=self.grid_var,
-                        style="Dark.TCheckbutton",
-                        command=self._mark_redraw).pack(anchor=tk.W, padx=4)
+        ttk.Checkbutton(
+            disp,
+            text="Grid",
+            variable=self.grid_var,
+            style="Dark.TCheckbutton",
+            command=self._mark_redraw,
+        ).pack(anchor=tk.W, padx=4)
 
         self.rotate_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(disp, text="Auto Rotate", variable=self.rotate_var,
-                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+        ttk.Checkbutton(
+            disp, text="Auto Rotate", variable=self.rotate_var, style="Dark.TCheckbutton"
+        ).pack(anchor=tk.W, padx=4)
 
         ttk.Label(disp, text="Rotation Speed", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
         self.speed_var = tk.DoubleVar(value=1.0)
         ttk.Scale(
-            disp, from_=0.0, to=5.0, variable=self.speed_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            disp,
+            from_=0.0,
+            to=5.0,
+            variable=self.speed_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
         ).pack(fill=tk.X, padx=4, pady=(2, 4))
 
         # --- Info ----------------------------------------------------------
@@ -224,16 +251,24 @@ class ThresholdLandscape3DGUI:
         info.pack(fill=tk.X, pady=4, expand=True)
 
         self.info_text = tk.Text(
-            info, height=5, wrap=tk.WORD,
-            bg=DARK_INPUT, fg=DARK_ACCENT, insertbackground=DARK_ACCENT,
-            font=("Consolas", 9), relief=tk.FLAT, bd=0,
+            info,
+            height=5,
+            wrap=tk.WORD,
+            bg=DARK_INPUT,
+            fg=DARK_ACCENT,
+            insertbackground=DARK_ACCENT,
+            font=("Consolas", 9),
+            relief=tk.FLAT,
+            bd=0,
         )
         self.info_text.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
         self._refresh_insight()
 
         ttk.Label(
-            ctrl, text="Drag to rotate | Scroll to zoom",
-            style="Subtitle.TLabel", wraplength=240,
+            ctrl,
+            text="Drag to rotate | Scroll to zoom",
+            style="Subtitle.TLabel",
+            wraplength=240,
         ).pack(anchor=tk.W, pady=(8, 0))
 
     def _build_canvas(self, parent):
@@ -298,7 +333,11 @@ class ThresholdLandscape3DGUI:
         self.info_text.insert(tk.END, insights[self.model.code_family])
         self.info_text.configure(state=tk.DISABLED)
 
-        scaling_labels = ["d ~ sqrt(n), R ~ 1/n", "d ~ sqrt(n log n), R = const", "d ~ n, R = const  (BREAKTHROUGH)"]
+        scaling_labels = [
+            "d ~ sqrt(n), R ~ 1/n",
+            "d ~ sqrt(n log n), R = const",
+            "d ~ n, R = const  (BREAKTHROUGH)",
+        ]
         self.family_insight.configure(text=scaling_labels[self.model.code_family])
 
     # -- drawing ------------------------------------------------------------
@@ -324,8 +363,14 @@ class ThresholdLandscape3DGUI:
             self.ax.plot_wireframe(X, Y, Z, color=DARK_ACCENT, alpha=0.6, linewidth=0.7)
         else:
             surf = self.ax.plot_surface(
-                X, Y, Z, cmap=cmap, alpha=0.85,
-                linewidth=0, antialiased=True, shade=True,
+                X,
+                Y,
+                Z,
+                cmap=cmap,
+                alpha=0.85,
+                linewidth=0,
+                antialiased=True,
+                shade=True,
             )
             # Colorbar
             if self._colorbar is not None:
@@ -334,7 +379,9 @@ class ThresholdLandscape3DGUI:
                 except Exception:
                     pass
             try:
-                self._colorbar = self.fig.colorbar(surf, ax=self.ax, shrink=0.45, aspect=25, pad=0.08)
+                self._colorbar = self.fig.colorbar(
+                    surf, ax=self.ax, shrink=0.45, aspect=25, pad=0.08
+                )
                 self._colorbar.set_label(zl, fontsize=10, color=DARK_TEXT)
                 self._colorbar.ax.tick_params(colors=DARK_SUBTITLE)
             except Exception:
@@ -349,7 +396,9 @@ class ThresholdLandscape3DGUI:
         mode = self.model.MODE_NAMES[self.model.visualization_mode]
         self.ax.set_title(
             f"{mode}\n{family}",
-            color=DARK_TEXT, fontweight="bold", fontsize=13,
+            color=DARK_TEXT,
+            fontweight="bold",
+            fontsize=13,
         )
 
         for pane in (self.ax.xaxis.pane, self.ax.yaxis.pane, self.ax.zaxis.pane):
@@ -397,6 +446,7 @@ class ThresholdLandscape3DGUI:
 # =========================================================================
 # Entry point
 # =========================================================================
+
 
 def main():
     """Entry point for the 3D threshold landscape visualizer."""

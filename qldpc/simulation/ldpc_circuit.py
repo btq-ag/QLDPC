@@ -13,27 +13,37 @@ Usage:
 """
 
 import matplotlib
+
 matplotlib.use("TkAgg")
 
+import os
 import tkinter as tk
 from tkinter import ttk
-import numpy as np
-import time
-import os
-import seaborn as sns
 
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
+import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.patches import Circle, Rectangle, FancyBboxPatch
+from matplotlib.figure import Figure
+from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
 from qldpc.theme import (
-    DARK_BG, DARK_PANEL, DARK_AXES, DARK_TEXT, DARK_SUBTITLE,
-    DARK_ACCENT, DARK_ACCENT_ALT, DARK_GRID, DARK_EDGE,
-    DARK_BUTTON, DARK_INPUT,
-    COLOR_SUCCESS, COLOR_ERROR, COLOR_WARNING, COLOR_INFO,
-    COLOR_DATA_QUBIT, COLOR_X_CHECK, COLOR_Z_CHECK, COLOR_CAVITY_BUS,
-    apply_dark_theme, configure_dark_axes,
+    COLOR_CAVITY_BUS,
+    COLOR_DATA_QUBIT,
+    COLOR_ERROR,
+    COLOR_INFO,
+    COLOR_SUCCESS,
+    DARK_ACCENT,
+    DARK_ACCENT_ALT,
+    DARK_AXES,
+    DARK_BG,
+    DARK_EDGE,
+    DARK_GRID,
+    DARK_INPUT,
+    DARK_PANEL,
+    DARK_SUBTITLE,
+    DARK_TEXT,
+    apply_dark_theme,
+    configure_dark_axes,
 )
 
 # ---------------------------------------------------------------------------
@@ -41,9 +51,7 @@ from qldpc.theme import (
 # ---------------------------------------------------------------------------
 seqCmap = sns.color_palette("mako", as_cmap=True)
 divCmap = sns.cubehelix_palette(start=0.5, rot=-0.5, as_cmap=True)
-lightCmap = sns.cubehelix_palette(
-    start=2, rot=0, dark=0, light=0.95, reverse=True, as_cmap=True
-)
+lightCmap = sns.cubehelix_palette(start=2, rot=0, dark=0, light=0.95, reverse=True, as_cmap=True)
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -56,6 +64,7 @@ ANIMATION_INTERVAL = 120  # ms
 # =========================================================================
 # Model
 # =========================================================================
+
 
 class QuantumLDPCCode:
     """Quantum LDPC code with belief-propagation decoding."""
@@ -170,6 +179,7 @@ class QuantumLDPCCode:
 # GUI
 # =========================================================================
 
+
 class LDPCSimulatorGUI:
     """Tkinter dark-mode GUI with embedded matplotlib panels."""
 
@@ -208,9 +218,7 @@ class LDPCSimulatorGUI:
         ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0), pady=8)
         ctrl.pack_propagate(False)
 
-        ttk.Label(ctrl, text="LDPC Simulator", style="Title.TLabel").pack(
-            anchor=tk.W, pady=(0, 8)
-        )
+        ttk.Label(ctrl, text="LDPC Simulator", style="Title.TLabel").pack(anchor=tk.W, pady=(0, 8))
 
         # --- Cooperativity section -----------------------------------------
         coop_frame = ttk.LabelFrame(ctrl, text="Cavity QED", style="Dark.TLabelframe")
@@ -222,8 +230,12 @@ class LDPCSimulatorGUI:
 
         self.coop_var = tk.DoubleVar(value=5.0)
         self.coop_scale = ttk.Scale(
-            coop_frame, from_=3.0, to=6.0, variable=self.coop_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            coop_frame,
+            from_=3.0,
+            to=6.0,
+            variable=self.coop_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
             command=self._on_coop_changed,
         )
         self.coop_scale.pack(fill=tk.X, padx=4, pady=2)
@@ -238,18 +250,22 @@ class LDPCSimulatorGUI:
         dec_frame = ttk.LabelFrame(ctrl, text="Decoding", style="Dark.TLabelframe")
         dec_frame.pack(fill=tk.X, pady=4)
 
-        ttk.Button(dec_frame, text="Decode Step", style="Dark.TButton",
-                   command=self._decode_step).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(
+            dec_frame, text="Decode Step", style="Dark.TButton", command=self._decode_step
+        ).pack(fill=tk.X, padx=4, pady=2)
 
-        self.auto_btn = ttk.Button(dec_frame, text="Auto Decode", style="Dark.TButton",
-                                   command=self._toggle_auto)
+        self.auto_btn = ttk.Button(
+            dec_frame, text="Auto Decode", style="Dark.TButton", command=self._toggle_auto
+        )
         self.auto_btn.pack(fill=tk.X, padx=4, pady=2)
 
-        ttk.Button(dec_frame, text="Clear Errors", style="Dark.TButton",
-                   command=self._clear_errors).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(
+            dec_frame, text="Clear Errors", style="Dark.TButton", command=self._clear_errors
+        ).pack(fill=tk.X, padx=4, pady=2)
 
-        ttk.Button(dec_frame, text="Reset Code", style="Dark.TButton",
-                   command=self._reset_code).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(
+            dec_frame, text="Reset Code", style="Dark.TButton", command=self._reset_code
+        ).pack(fill=tk.X, padx=4, pady=2)
 
         # --- Display toggles -----------------------------------------------
         disp_frame = ttk.LabelFrame(ctrl, text="Display", style="Dark.TLabelframe")
@@ -257,13 +273,17 @@ class LDPCSimulatorGUI:
 
         self.msg_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
-            disp_frame, text="Show Messages", variable=self.msg_var,
+            disp_frame,
+            text="Show Messages",
+            variable=self.msg_var,
             style="Dark.TCheckbutton",
         ).pack(anchor=tk.W, padx=4)
 
         self.cavity_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
-            disp_frame, text="Show Cavity", variable=self.cavity_var,
+            disp_frame,
+            text="Show Cavity",
+            variable=self.cavity_var,
             style="Dark.TCheckbutton",
         ).pack(anchor=tk.W, padx=4, pady=(0, 4))
 
@@ -272,9 +292,15 @@ class LDPCSimulatorGUI:
         info_frame.pack(fill=tk.X, pady=4, expand=True)
 
         self.info_text = tk.Text(
-            info_frame, height=8, wrap=tk.WORD,
-            bg=DARK_INPUT, fg=DARK_ACCENT, insertbackground=DARK_ACCENT,
-            font=("Consolas", 9), relief=tk.FLAT, bd=0,
+            info_frame,
+            height=8,
+            wrap=tk.WORD,
+            bg=DARK_INPUT,
+            fg=DARK_ACCENT,
+            insertbackground=DARK_ACCENT,
+            font=("Consolas", 9),
+            relief=tk.FLAT,
+            bd=0,
         )
         self.info_text.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
         self._refresh_info()
@@ -282,9 +308,9 @@ class LDPCSimulatorGUI:
         # --- Instructions --------------------------------------------------
         ttk.Label(
             ctrl,
-            text="Click qubits to inject errors\n"
-                 "Cycle: |0> -> |1> -> X -> Z -> Y",
-            style="Subtitle.TLabel", wraplength=240,
+            text="Click qubits to inject errors\nCycle: |0> -> |1> -> X -> Z -> Y",
+            style="Subtitle.TLabel",
+            wraplength=240,
         ).pack(anchor=tk.W, pady=(8, 0))
 
     def _build_canvas(self, parent):
@@ -293,8 +319,12 @@ class LDPCSimulatorGUI:
 
         self.fig = Figure(figsize=(10, 7), facecolor=DARK_BG)
         gs = self.fig.add_gridspec(
-            2, 3, height_ratios=[2.5, 1], width_ratios=[2, 0.8, 0.8],
-            hspace=0.35, wspace=0.30,
+            2,
+            3,
+            height_ratios=[2.5, 1],
+            width_ratios=[2, 0.8, 0.8],
+            hspace=0.35,
+            wspace=0.30,
         )
 
         self.ax_circuit = self.fig.add_subplot(gs[0, :2])
@@ -324,9 +354,7 @@ class LDPCSimulatorGUI:
 
     def _toggle_auto(self):
         self.auto_decode = not self.auto_decode
-        self.auto_btn.configure(
-            text="Stop Auto" if self.auto_decode else "Auto Decode"
-        )
+        self.auto_btn.configure(text="Stop Auto" if self.auto_decode else "Auto Decode")
 
     def _clear_errors(self):
         self.code.clear_errors()
@@ -343,7 +371,7 @@ class LDPCSimulatorGUI:
             return
         for i in range(self.code.n_data):
             x, y = self._qubit_pos(i)
-            if (event.xdata - x) ** 2 + (event.ydata - y) ** 2 < 0.3 ** 2:
+            if (event.xdata - x) ** 2 + (event.ydata - y) ** 2 < 0.3**2:
                 new_state = (self.code.qubit_states[i] + 1) % 5
                 self.code.inject_error(i, new_state)
                 self.code.reset_decoding()
@@ -406,10 +434,17 @@ class LDPCSimulatorGUI:
 
             circle = Circle((x, y), 0.3, color=color, alpha=alpha)
             ax.add_patch(circle)
-            ax.text(x, y, state_labels.get(state, "?"), ha="center", va="center",
-                    fontsize=9, fontweight="bold", color=DARK_TEXT)
-            ax.text(x, y - 0.55, f"q{i}", ha="center", va="center",
-                    fontsize=7, color=DARK_SUBTITLE)
+            ax.text(
+                x,
+                y,
+                state_labels.get(state, "?"),
+                ha="center",
+                va="center",
+                fontsize=9,
+                fontweight="bold",
+                color=DARK_TEXT,
+            )
+            ax.text(x, y - 0.55, f"q{i}", ha="center", va="center", fontsize=7, color=DARK_SUBTITLE)
 
         # Parity checks
         for j in range(self.code.n_checks):
@@ -417,8 +452,16 @@ class LDPCSimulatorGUI:
             color = COLOR_SUCCESS if self.code.syndrome[j] == 0 else COLOR_ERROR
             rect = Rectangle((x - 0.2, y - 0.2), 0.4, 0.4, facecolor=color, alpha=0.85)
             ax.add_patch(rect)
-            ax.text(x, y, f"s{j}", ha="center", va="center",
-                    fontsize=8, fontweight="bold", color=DARK_TEXT)
+            ax.text(
+                x,
+                y,
+                f"s{j}",
+                ha="center",
+                va="center",
+                fontsize=8,
+                fontweight="bold",
+                color=DARK_TEXT,
+            )
 
         # Connections
         if self.msg_var.get():
@@ -430,36 +473,56 @@ class LDPCSimulatorGUI:
                         msg = self.code.check_to_var_messages[j, i]
                         alpha = 0.15 + 0.5 * abs(msg - 0.5) * 2
                         color = COLOR_ERROR if msg > 0.5 else COLOR_SUCCESS
-                        ax.plot([x1, x2], [y1, y2], color=color,
-                                alpha=alpha, linewidth=0.8)
+                        ax.plot([x1, x2], [y1, y2], color=color, alpha=alpha, linewidth=0.8)
 
         # Cavity QED box
         if self.cavity_var.get():
             cavity = FancyBboxPatch(
-                (11.5, 2), 2.5, 3, boxstyle="round,pad=0.1",
-                facecolor=COLOR_CAVITY_BUS, alpha=0.35,
-                edgecolor=DARK_EDGE, linewidth=2,
+                (11.5, 2),
+                2.5,
+                3,
+                boxstyle="round,pad=0.1",
+                facecolor=COLOR_CAVITY_BUS,
+                alpha=0.35,
+                edgecolor=DARK_EDGE,
+                linewidth=2,
             )
             ax.add_patch(cavity)
-            ax.text(12.75, 3.5, "Cavity\nQED", ha="center", va="center",
-                    fontsize=11, fontweight="bold", color=DARK_TEXT)
+            ax.text(
+                12.75,
+                3.5,
+                "Cavity\nQED",
+                ha="center",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color=DARK_TEXT,
+            )
             C = self.code.cavity_cooperativity
             F = self.code.gate_fidelity
             ax.text(
-                12.75, 2.5, f"C = {C:.0e}\nF = {F:.4f}",
-                ha="center", va="center", fontsize=9, color=DARK_TEXT,
-                bbox=dict(boxstyle="round", facecolor=DARK_PANEL, alpha=0.85,
-                          edgecolor=DARK_EDGE),
+                12.75,
+                2.5,
+                f"C = {C:.0e}\nF = {F:.4f}",
+                ha="center",
+                va="center",
+                fontsize=9,
+                color=DARK_TEXT,
+                bbox=dict(boxstyle="round", facecolor=DARK_PANEL, alpha=0.85, edgecolor=DARK_EDGE),
             )
 
         bp_text = f"BP Iteration: {self.code.bp_iteration}/{self.code.max_bp_iterations}"
         if self.code.decoding_complete:
             bp_text += "  [COMPLETE]"
         ax.text(
-            5, 7.5, bp_text, ha="center", fontsize=11, fontweight="bold",
+            5,
+            7.5,
+            bp_text,
+            ha="center",
+            fontsize=11,
+            fontweight="bold",
             color=DARK_TEXT,
-            bbox=dict(boxstyle="round", facecolor=DARK_PANEL, alpha=0.6,
-                      edgecolor=DARK_EDGE),
+            bbox=dict(boxstyle="round", facecolor=DARK_PANEL, alpha=0.6, edgecolor=DARK_EDGE),
         )
 
     def _draw_syndrome(self):
@@ -473,20 +536,45 @@ class LDPCSimulatorGUI:
         for i, s in enumerate(self.code.syndrome):
             color = COLOR_SUCCESS if s == 0 else COLOR_ERROR
             alpha = 0.5 if s == 0 else 0.9
-            rect = Rectangle((0, i), 1, 0.8, facecolor=color, alpha=alpha,
-                              edgecolor=DARK_EDGE, linewidth=0.5)
+            rect = Rectangle(
+                (0, i), 1, 0.8, facecolor=color, alpha=alpha, edgecolor=DARK_EDGE, linewidth=0.5
+            )
             ax.add_patch(rect)
-            ax.text(0.5, i + 0.4, str(s), ha="center", va="center",
-                    fontsize=11, fontweight="bold", color=DARK_TEXT)
+            ax.text(
+                0.5,
+                i + 0.4,
+                str(s),
+                ha="center",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color=DARK_TEXT,
+            )
 
-        ax.text(0.5, -0.4, "s = He", ha="center", va="top",
-                fontsize=11, fontweight="bold", color=DARK_ACCENT)
+        ax.text(
+            0.5,
+            -0.4,
+            "s = He",
+            ha="center",
+            va="top",
+            fontsize=11,
+            fontweight="bold",
+            color=DARK_ACCENT,
+        )
 
         active = np.any(self.code.syndrome == 1)
         status = "Errors Detected!" if active else "No Errors"
         sc = COLOR_ERROR if active else COLOR_SUCCESS
-        ax.text(0.5, self.code.n_checks, status, ha="center", va="bottom",
-                fontsize=9, fontweight="bold", color=sc)
+        ax.text(
+            0.5,
+            self.code.n_checks,
+            status,
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            fontweight="bold",
+            color=sc,
+        )
 
     def _draw_beliefs(self):
         ax = self.ax_beliefs
@@ -501,11 +589,16 @@ class LDPCSimulatorGUI:
             if state in (2, 3, 4):
                 colors[i] = COLOR_ERROR
 
-        ax.bar(indices, probs, color=colors, alpha=0.8, edgecolor=DARK_EDGE,
-               linewidth=0.3)
+        ax.bar(indices, probs, color=colors, alpha=0.8, edgecolor=DARK_EDGE, linewidth=0.3)
         ax.axhline(0.5, color=DARK_ACCENT_ALT, linestyle="--", alpha=0.6)
-        ax.text(self.code.n_data / 2, 0.53, "Decision Threshold",
-                ha="center", fontsize=9, color=DARK_ACCENT_ALT)
+        ax.text(
+            self.code.n_data / 2,
+            0.53,
+            "Decision Threshold",
+            ha="center",
+            fontsize=9,
+            color=DARK_ACCENT_ALT,
+        )
         ax.set_ylim(0, 1)
         ax.set_xlabel("Data Qubits", color=DARK_SUBTITLE)
         ax.set_ylabel("Error Probability", color=DARK_SUBTITLE)
@@ -545,6 +638,7 @@ class LDPCSimulatorGUI:
 # =========================================================================
 # Entry point
 # =========================================================================
+
 
 def main():
     """Entry point for the real-time LDPC circuit simulator."""

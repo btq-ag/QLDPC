@@ -8,8 +8,8 @@ and threshold analysis.
 Author: Jeffrey Morais
 """
 
-from qldpc.components import ComponentType, Component3D, ViewMode
-from qldpc.config import Config, GridConfig, ColorPalette, LDPC_COLORS
+from qldpc.components import Component3D, ComponentType, ViewMode
+from qldpc.config import LDPC_COLORS, ColorPalette, Config, GridConfig
 from qldpc.processor import QuantumLDPCProcessor
 
 __version__ = "1.0.0"

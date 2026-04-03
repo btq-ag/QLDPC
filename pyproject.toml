@@ -49,6 +49,8 @@ quantum = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
 ]
 docs = [
     "mkdocs>=1.5",
@@ -73,3 +75,33 @@ include = ["qldpc*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = [
+    "E501",   # line too long — handled separately
+    "N806",   # camelCase variables in functions — intentional policy
+    "N816",   # mixed-case globals — intentional policy
+    "N803",   # camelCase arguments — intentional policy
+    "N802",   # camelCase function names — intentional policy
+]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+exclude = ["tests/", "docs/"]
+
+# Graduated strictness: new modules should meet this bar.
+# Existing modules are exempted below — fix incrementally, not all at once.
+warn_return_any = true
+warn_unused_ignores = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["qldpc.builder.*", "qldpc.simulation.*", "qldpc.tanner.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

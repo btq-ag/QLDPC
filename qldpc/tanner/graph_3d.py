@@ -13,26 +13,32 @@ Usage:
 """
 
 import matplotlib
+
 matplotlib.use("TkAgg")
 
+import os
+import random
 import tkinter as tk
 from tkinter import ttk
-import numpy as np
-import random
-import os
-import networkx as nx
-import seaborn as sns
 
-from matplotlib.figure import Figure
+import networkx as nx
+import numpy as np
+import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from qldpc.theme import (
-    DARK_BG, DARK_PANEL, DARK_AXES, DARK_TEXT, DARK_SUBTITLE,
-    DARK_ACCENT, DARK_ACCENT_ALT, DARK_GRID, DARK_EDGE,
+    DARK_ACCENT,
+    DARK_AXES,
+    DARK_BG,
+    DARK_EDGE,
+    DARK_GRID,
     DARK_INPUT,
-    COLOR_SUCCESS, COLOR_ERROR,
-    COLOR_DATA_QUBIT, COLOR_X_CHECK, COLOR_Z_CHECK, COLOR_ANCILLA,
-    apply_dark_theme, configure_dark_3d_axes,
+    DARK_PANEL,
+    DARK_SUBTITLE,
+    DARK_TEXT,
+    apply_dark_theme,
+    configure_dark_3d_axes,
 )
 
 # ---------------------------------------------------------------------------
@@ -53,6 +59,7 @@ ANIMATION_INTERVAL = 100  # ms
 # =========================================================================
 # Model
 # =========================================================================
+
 
 class QuantumLDPCTannerGraph:
     """3D Tanner graph model for quantum LDPC codes."""
@@ -102,45 +109,49 @@ class QuantumLDPCTannerGraph:
     def _generate_3d_layout(self):
         if self.layout_style == 0:
             pos = nx.spring_layout(self.graph, k=6, iterations=150)
-            self.qubit_positions = np.array([
-                [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
-                for n in self.graph.nodes() if n.startswith("q_")
-            ])
-            self.check_positions = np.array([
-                [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
-                for n in self.graph.nodes() if n.startswith("c_")
-            ])
+            self.qubit_positions = np.array(
+                [
+                    [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
+                    for n in self.graph.nodes()
+                    if n.startswith("q_")
+                ]
+            )
+            self.check_positions = np.array(
+                [
+                    [pos[n][0] * 8, pos[n][1] * 8, random.uniform(-4, 4)]
+                    for n in self.graph.nodes()
+                    if n.startswith("c_")
+                ]
+            )
         elif self.layout_style == 1:
             angles_q = np.linspace(0, 2 * np.pi, self.n_qubits, endpoint=False)
-            self.qubit_positions = np.array([
-                [12 * np.cos(a), 12 * np.sin(a), -5.0] for a in angles_q
-            ])
+            self.qubit_positions = np.array(
+                [[12 * np.cos(a), 12 * np.sin(a), -5.0] for a in angles_q]
+            )
             angles_c = np.linspace(0, 2 * np.pi, self.n_checks, endpoint=False)
-            self.check_positions = np.array([
-                [8 * np.cos(a), 8 * np.sin(a), 5.0] for a in angles_c
-            ])
+            self.check_positions = np.array([[8 * np.cos(a), 8 * np.sin(a), 5.0] for a in angles_c])
         else:
             self.qubit_positions = self._sphere_layout(self.n_qubits, 12.0)
             self.check_positions = self._sphere_layout(self.n_checks, 8.0)
 
     @staticmethod
     def _sphere_layout(n, radius=1.0):
-        golden = (1 + 5 ** 0.5) / 2
+        golden = (1 + 5**0.5) / 2
         pts = []
         for i in range(n):
             theta = 2 * np.pi * i / golden
             phi = np.arccos(1 - 2 * (i + 0.5) / n)
-            pts.append([
-                radius * np.sin(phi) * np.cos(theta),
-                radius * np.sin(phi) * np.sin(theta),
-                radius * np.cos(phi),
-            ])
+            pts.append(
+                [
+                    radius * np.sin(phi) * np.cos(theta),
+                    radius * np.sin(phi) * np.sin(theta),
+                    radius * np.cos(phi),
+                ]
+            )
         return np.array(pts)
 
     def _init_visual_properties(self):
-        self.node_colors = (
-            [seqCmap(0.3)] * self.n_qubits + [divCmap(0.7)] * self.n_checks
-        )
+        self.node_colors = [seqCmap(0.3)] * self.n_qubits + [divCmap(0.7)] * self.n_checks
         self.node_sizes = [100] * self.n_qubits + [150] * self.n_checks
 
     def trigger_syndrome(self, node_index=None):
@@ -176,12 +187,16 @@ class QuantumLDPCTannerGraph:
     def get_edge_positions(self):
         edges = []
         for n1, n2 in self.graph.edges():
-            p1 = (self.qubit_positions[int(n1.split("_")[1])]
-                   if n1.startswith("q_")
-                   else self.check_positions[int(n1.split("_")[1])])
-            p2 = (self.qubit_positions[int(n2.split("_")[1])]
-                   if n2.startswith("q_")
-                   else self.check_positions[int(n2.split("_")[1])])
+            p1 = (
+                self.qubit_positions[int(n1.split("_")[1])]
+                if n1.startswith("q_")
+                else self.check_positions[int(n1.split("_")[1])]
+            )
+            p2 = (
+                self.qubit_positions[int(n2.split("_")[1])]
+                if n2.startswith("q_")
+                else self.check_positions[int(n2.split("_")[1])]
+            )
             edges.append((p1, p2))
         return edges
 
@@ -189,6 +204,7 @@ class QuantumLDPCTannerGraph:
 # =========================================================================
 # GUI
 # =========================================================================
+
 
 class TannerGraph3DGUI:
     """Tkinter dark-mode GUI with embedded 3D matplotlib Tanner graph."""
@@ -225,9 +241,7 @@ class TannerGraph3DGUI:
         ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0), pady=8)
         ctrl.pack_propagate(False)
 
-        ttk.Label(ctrl, text="Tanner Graph 3D", style="Title.TLabel").pack(
-            anchor=tk.W, pady=(0, 8)
-        )
+        ttk.Label(ctrl, text="Tanner Graph 3D", style="Title.TLabel").pack(anchor=tk.W, pady=(0, 8))
 
         # --- Graph parameters ----------------------------------------------
         gp = ttk.LabelFrame(ctrl, text="Graph", style="Dark.TLabelframe")
@@ -236,24 +250,36 @@ class TannerGraph3DGUI:
         ttk.Label(gp, text="Qubits", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
         self.qubits_var = tk.IntVar(value=DEFAULT_N_QUBITS)
         ttk.Scale(
-            gp, from_=10, to=50, variable=self.qubits_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            gp,
+            from_=10,
+            to=50,
+            variable=self.qubits_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
             command=lambda v: self._rebuild_graph(),
         ).pack(fill=tk.X, padx=4, pady=2)
 
         ttk.Label(gp, text="Checks", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
         self.checks_var = tk.IntVar(value=DEFAULT_N_CHECKS)
         ttk.Scale(
-            gp, from_=5, to=30, variable=self.checks_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            gp,
+            from_=5,
+            to=30,
+            variable=self.checks_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
             command=lambda v: self._rebuild_graph(),
         ).pack(fill=tk.X, padx=4, pady=2)
 
         ttk.Label(gp, text="Syndrome Spread", style="Dark.TLabel").pack(anchor=tk.W, padx=4)
         self.spread_var = tk.IntVar(value=DEFAULT_SYNDROME_SPREAD)
         ttk.Scale(
-            gp, from_=1, to=5, variable=self.spread_var,
-            orient=tk.HORIZONTAL, style="Dark.Horizontal.TScale",
+            gp,
+            from_=1,
+            to=5,
+            variable=self.spread_var,
+            orient=tk.HORIZONTAL,
+            style="Dark.Horizontal.TScale",
             command=lambda v: setattr(self.model, "syndrome_spread", int(float(v))),
         ).pack(fill=tk.X, padx=4, pady=(2, 4))
 
@@ -261,13 +287,15 @@ class TannerGraph3DGUI:
         cl = ttk.LabelFrame(ctrl, text="Construction", style="Dark.TLabelframe")
         cl.pack(fill=tk.X, pady=4)
 
-        ttk.Button(cl, text="Cycle Code Type", style="Dark.TButton",
-                   command=self._cycle_code).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(cl, text="Cycle Code Type", style="Dark.TButton", command=self._cycle_code).pack(
+            fill=tk.X, padx=4, pady=2
+        )
         self.code_label = ttk.Label(cl, text=self.model.CODE_NAMES[0], style="Accent.TLabel")
         self.code_label.pack(anchor=tk.W, padx=4)
 
-        ttk.Button(cl, text="Cycle Layout", style="Dark.TButton",
-                   command=self._cycle_layout).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(cl, text="Cycle Layout", style="Dark.TButton", command=self._cycle_layout).pack(
+            fill=tk.X, padx=4, pady=2
+        )
         self.layout_label = ttk.Label(cl, text=self.model.LAYOUT_NAMES[0], style="Dark.TLabel")
         self.layout_label.pack(anchor=tk.W, padx=4, pady=(0, 4))
 
@@ -275,33 +303,46 @@ class TannerGraph3DGUI:
         act = ttk.LabelFrame(ctrl, text="Actions", style="Dark.TLabelframe")
         act.pack(fill=tk.X, pady=4)
 
-        ttk.Button(act, text="Trigger Syndrome", style="Accent.TButton",
-                   command=lambda: self.model.trigger_syndrome()).pack(fill=tk.X, padx=4, pady=2)
+        ttk.Button(
+            act,
+            text="Trigger Syndrome",
+            style="Accent.TButton",
+            command=lambda: self.model.trigger_syndrome(),
+        ).pack(fill=tk.X, padx=4, pady=2)
 
         # --- Display -------------------------------------------------------
         disp = ttk.LabelFrame(ctrl, text="Display", style="Dark.TLabelframe")
         disp.pack(fill=tk.X, pady=4)
 
         self.edges_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(disp, text="Show Edges", variable=self.edges_var,
-                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+        ttk.Checkbutton(
+            disp, text="Show Edges", variable=self.edges_var, style="Dark.TCheckbutton"
+        ).pack(anchor=tk.W, padx=4)
 
         self.labels_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(disp, text="Show Labels", variable=self.labels_var,
-                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4)
+        ttk.Checkbutton(
+            disp, text="Show Labels", variable=self.labels_var, style="Dark.TCheckbutton"
+        ).pack(anchor=tk.W, padx=4)
 
         self.rotate_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(disp, text="Auto Rotate", variable=self.rotate_var,
-                        style="Dark.TCheckbutton").pack(anchor=tk.W, padx=4, pady=(0, 4))
+        ttk.Checkbutton(
+            disp, text="Auto Rotate", variable=self.rotate_var, style="Dark.TCheckbutton"
+        ).pack(anchor=tk.W, padx=4, pady=(0, 4))
 
         # --- Stats ---------------------------------------------------------
         stats = ttk.LabelFrame(ctrl, text="Statistics", style="Dark.TLabelframe")
         stats.pack(fill=tk.X, pady=4, expand=True)
 
         self.stats_text = tk.Text(
-            stats, height=6, wrap=tk.WORD,
-            bg=DARK_INPUT, fg=DARK_ACCENT, insertbackground=DARK_ACCENT,
-            font=("Consolas", 9), relief=tk.FLAT, bd=0,
+            stats,
+            height=6,
+            wrap=tk.WORD,
+            bg=DARK_INPUT,
+            fg=DARK_ACCENT,
+            insertbackground=DARK_ACCENT,
+            font=("Consolas", 9),
+            relief=tk.FLAT,
+            bd=0,
         )
         self.stats_text.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
         self._refresh_stats()
@@ -310,7 +351,8 @@ class TannerGraph3DGUI:
         ttk.Label(
             ctrl,
             text="Click Trigger Syndrome to see\nerror propagation on graph",
-            style="Subtitle.TLabel", wraplength=240,
+            style="Subtitle.TLabel",
+            wraplength=240,
         ).pack(anchor=tk.W, pady=(8, 0))
 
     def _build_canvas(self, parent):
@@ -399,10 +441,15 @@ class TannerGraph3DGUI:
         qp = self.model.qubit_positions
         if len(qp) > 0:
             ax.scatter(
-                qp[:, 0], qp[:, 1], qp[:, 2],
+                qp[:, 0],
+                qp[:, 1],
+                qp[:, 2],
                 c=self.model.node_colors[: self.model.n_qubits],
                 s=self.model.node_sizes[: self.model.n_qubits],
-                alpha=0.85, marker="o", edgecolors=DARK_EDGE, linewidth=0.5,
+                alpha=0.85,
+                marker="o",
+                edgecolors=DARK_EDGE,
+                linewidth=0.5,
                 label="Data Qubits",
             )
 
@@ -410,10 +457,15 @@ class TannerGraph3DGUI:
         cp = self.model.check_positions
         if len(cp) > 0:
             ax.scatter(
-                cp[:, 0], cp[:, 1], cp[:, 2],
-                c=self.model.node_colors[self.model.n_qubits:],
-                s=self.model.node_sizes[self.model.n_qubits:],
-                alpha=0.85, marker="s", edgecolors=DARK_EDGE, linewidth=0.5,
+                cp[:, 0],
+                cp[:, 1],
+                cp[:, 2],
+                c=self.model.node_colors[self.model.n_qubits :],
+                s=self.model.node_sizes[self.model.n_qubits :],
+                alpha=0.85,
+                marker="s",
+                edgecolors=DARK_EDGE,
+                linewidth=0.5,
                 label="Check Nodes",
             )
 
@@ -428,7 +480,9 @@ class TannerGraph3DGUI:
         layout_name = self.model.LAYOUT_NAMES[self.model.layout_style]
         ax.set_title(
             f"3D Tanner Graph: {code_name}\nLayout: {layout_name}",
-            color=DARK_TEXT, fontweight="bold", fontsize=13,
+            color=DARK_TEXT,
+            fontweight="bold",
+            fontsize=13,
         )
         ax.set_xlabel("X", color=DARK_SUBTITLE)
         ax.set_ylabel("Y", color=DARK_SUBTITLE)
@@ -438,8 +492,13 @@ class TannerGraph3DGUI:
             pane.set_facecolor(DARK_BG)
             pane.set_edgecolor(DARK_EDGE)
         ax.grid(color=DARK_GRID, alpha=0.25)
-        ax.legend(loc="upper left", fontsize=8,
-                  facecolor=DARK_PANEL, edgecolor=DARK_EDGE, labelcolor=DARK_TEXT)
+        ax.legend(
+            loc="upper left",
+            fontsize=8,
+            facecolor=DARK_PANEL,
+            edgecolor=DARK_EDGE,
+            labelcolor=DARK_TEXT,
+        )
 
         rng = 20.0
         ax.set_xlim([-rng, rng])
@@ -473,6 +532,7 @@ class TannerGraph3DGUI:
 # =========================================================================
 # Entry point
 # =========================================================================
+
 
 def main():
     """Entry point for the 3D Tanner graph visualizer."""
