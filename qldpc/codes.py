@@ -422,3 +422,69 @@ def buildSyndromeCircuit(
         circuit.measure(zAncilla[i], zSyndrome[i])
 
     return circuit
+
+
+# ---------------------------------------------------------------------------
+# Bivariate Bicycle (BB) codes
+# ---------------------------------------------------------------------------
+
+
+def _cyclicPermutation(size: int, shift: int) -> np.ndarray:
+    """Build a size x size cyclic permutation matrix with the given shift."""
+    mat = np.zeros((size, size), dtype=int)
+    for i in range(size):
+        mat[i, (i + shift) % size] = 1
+    return mat
+
+
+def bivariateBicycleCode(
+    ell: int,
+    m: int,
+    aTerms: list[tuple[int, int]],
+    bTerms: list[tuple[int, int]],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Bivariate Bicycle (BB) CSS code over Z_ell x Z_m.
+
+    Constructs a CSS code from two polynomials A(x,y) and B(x,y) in the
+    group algebra of Z_ell x Z_m. Each polynomial is a sum of monomials
+    x^a * y^b represented as (a, b) tuples.
+
+    A = sum_i x^{a_i} y^{b_i} for each (a_i, b_i) in aTerms
+    B = sum_j x^{a_j} y^{b_j} for each (a_j, b_j) in bTerms
+
+    The parity check matrices are:
+      H_X = [A | B]
+      H_Z = [B^T | A^T]
+
+    where A and B are (ell*m) x (ell*m) matrices built from Kronecker
+    products of cyclic permutation matrices.
+
+    Target instances from Bravyi et al. 2024:
+      [[72,12,6]]:  bivariateBicycleCode(6, 6, [(3,0),(0,1),(0,2)], [(0,3),(1,0),(2,0)])
+      [[90,8,10]]:  bivariateBicycleCode(15, 3, [(9,0),(0,1),(0,2)], [(0,0),(2,0),(7,0)])
+      [[144,12,12]]: bivariateBicycleCode(12, 6, [(3,0),(0,1),(0,2)], [(0,3),(1,0),(2,0)])
+
+    Returns (hX, hZ).
+    """
+    n = ell * m
+
+    # Build polynomial matrix A = sum of x^a_i (kron) y^b_i
+    A = np.zeros((n, n), dtype=int)
+    for xShift, yShift in aTerms:
+        A = (A + np.kron(
+            _cyclicPermutation(ell, xShift),
+            _cyclicPermutation(m, yShift),
+        )) % 2
+
+    # Build polynomial matrix B = sum of x^a_j (kron) y^b_j
+    B = np.zeros((n, n), dtype=int)
+    for xShift, yShift in bTerms:
+        B = (B + np.kron(
+            _cyclicPermutation(ell, xShift),
+            _cyclicPermutation(m, yShift),
+        )) % 2
+
+    hX = np.hstack([A, B]) % 2
+    hZ = np.hstack([B.T, A.T]) % 2
+
+    return hX.astype(int), hZ.astype(int)

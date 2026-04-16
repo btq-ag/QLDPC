@@ -5,7 +5,6 @@ depolarizing, bit-flip, and phase-flip. Each function returns
 error vectors compatible with syndrome-based decoding.
 """
 
-from typing import Optional
 
 import numpy as np
 
@@ -13,7 +12,7 @@ import numpy as np
 def depolarizingChannel(
     nQubits: int,
     p: float,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """Sample error labels from the depolarizing channel.
 
@@ -29,7 +28,7 @@ def depolarizingChannel(
 def depolarizingErrors(
     nQubits: int,
     p: float,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Sample X and Z error vectors from the depolarizing channel.
 
@@ -45,7 +44,7 @@ def depolarizingErrors(
 def bitflipChannel(
     nQubits: int,
     p: float,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """Sample an X error vector from the bit-flip (BSC) channel.
 
@@ -61,7 +60,7 @@ def bitflipChannel(
 def phaseflipChannel(
     nQubits: int,
     p: float,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """Sample a Z error vector from the phase-flip channel.
 

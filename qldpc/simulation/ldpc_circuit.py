@@ -74,7 +74,7 @@ class QuantumLDPCCode:
         self,
         n_data: int = 21,
         n_checks: int = 12,
-        parityMatrix: np.ndarray = None,
+        parityMatrix: np.ndarray | None = None,
         channelProb: float = DEFAULT_ERROR_RATE,
     ):
         if parityMatrix is not None:
@@ -85,7 +85,7 @@ class QuantumLDPCCode:
             self.n_checks = n_checks
             self.parity_matrix = self._generate_ldpc_matrix()
 
-        self.distance = int(np.sqrt(self.n_data))
+        self.distance = self._estimate_distance()
 
         # 0=|0>, 1=|1>, 2=X error, 3=Z error, 4=Y error
         self.qubit_states = np.zeros(self.n_data, dtype=int)
@@ -122,10 +122,50 @@ class QuantumLDPCCode:
             H[i, cols] = 1
         return H
 
+    # -- distance -----------------------------------------------------------
+
+    def _estimate_distance(self) -> int:
+        """Estimate code distance from the parity check matrix.
+
+        Uses exact calculation for small codes; falls back to a
+        column-weight heuristic for larger codes.
+        """
+        n = self.n_data
+        rank = int(np.linalg.matrix_rank(self.parity_matrix % 2))
+        nullDim = n - rank
+        if nullDim + rank <= 25:
+            try:
+                from qldpc.codes import _gf2NullSpace
+                kernel = _gf2NullSpace(self.parity_matrix)
+                if kernel.size == 0:
+                    return n
+                minWeight = n
+                limit = min(len(kernel), 2**min(len(kernel), 15))
+                for mask in range(1, limit):
+                    vec = np.zeros(n, dtype=int)
+                    for b in range(len(kernel)):
+                        if mask & (1 << b):
+                            vec = (vec + kernel[b]) % 2
+                    w = int(np.sum(vec))
+                    if 0 < w < minWeight:
+                        minWeight = w
+                return minWeight
+            except (ImportError, ValueError):
+                pass
+        # Heuristic fallback: minimum column weight
+        colWeights = np.sum(self.parity_matrix, axis=0)
+        return max(1, int(np.min(colWeights)))
+
     # -- fidelity -----------------------------------------------------------
 
     def _calculate_gate_fidelity(self):
         return 1.0 - 1.0 / self.cavity_cooperativity - 0.001
+
+    def _sync_decoder_channel(self) -> None:
+        """Update the decoder channel probability from the current gate fidelity."""
+        channelProb = max(1e-10, min(1.0 - 1e-10, 1.0 - self.gate_fidelity))
+        self._decoder.channelProb = channelProb
+        self._decoder.channelLlr = np.log((1.0 - channelProb) / channelProb)
 
     # -- error injection ----------------------------------------------------
 
@@ -137,7 +177,8 @@ class QuantumLDPCCode:
     def _update_syndrome(self):
         for i in range(self.n_checks):
             connected = np.where(self.parity_matrix[i] == 1)[0]
-            errors = sum(1 for q in connected if self.qubit_states[q] in (2, 3, 4))
+            # Z-type checks detect X and Y errors (states 2, 4)
+            errors = sum(1 for q in connected if self.qubit_states[q] in (2, 4))
             self.syndrome[i] = errors % 2
 
     # -- belief propagation -------------------------------------------------
@@ -371,6 +412,7 @@ class LDPCSimulatorGUI:
         C = 10 ** float(val)
         self.code.cavity_cooperativity = C
         self.code.gate_fidelity = self.code._calculate_gate_fidelity()
+        self.code._sync_decoder_channel()
         self.coop_label.configure(text=f"C = {C:.2e}")
         self.fidelity_label.configure(text=f"F = {self.code.gate_fidelity:.4f}")
 

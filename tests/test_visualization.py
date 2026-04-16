@@ -86,9 +86,21 @@ class TestMonteCarloModule:
         _, hZ = steaneCode()
         result = estimateErrorRate(hZ, 0.01, nShots=100, seed=42)
         assert "blockErrorRate" in result
+        assert "logicalErrorRate" in result
         assert "bpFailureRate" in result
         assert 0 <= result["blockErrorRate"] <= 1
+        assert 0 <= result["logicalErrorRate"] <= 1
         assert 0 <= result["bpFailureRate"] <= 1
+
+    def test_logical_error_rate_with_stabilizers(self):
+        from qldpc.codes import steaneCode
+        from qldpc.simulation.monte_carlo import estimateErrorRate
+        hX, hZ = steaneCode()
+        result = estimateErrorRate(
+            hZ, 0.01, nShots=100, seed=42, stabilizerMatrix=hX,
+        )
+        assert "logicalErrorRate" in result
+        assert result["logicalErrorRate"] <= result["blockErrorRate"]
 
     def test_threshold_sweep(self):
         from qldpc.codes import steaneCode

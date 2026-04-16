@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from qldpc.codes import repetitionCode, shorCode, steaneCode
-from qldpc.decoders import BeliefPropagationDecoder
+from qldpc.decoders import BeliefPropagationDecoder, MinSumDecoder, OSDDecoder
 
 
 class TestBeliefPropagationDecoder:
@@ -120,3 +120,123 @@ class TestMWPMDecoder:
             _, hZ = steaneCode()
             with pytest.raises(ImportError, match="pymatching"):
                 MWPMDecoder(hZ)
+
+
+class TestMinSumDecoder:
+    def test_zero_syndrome_no_correction(self):
+        """Min-sum BP returns all-zero correction for zero syndrome."""
+        _, hZ = steaneCode()
+        decoder = MinSumDecoder(hZ, channelProb=0.1, maxIterations=50, mode="normalized")
+        syndrome = np.zeros(hZ.shape[0], dtype=int)
+        correction = decoder.decode(syndrome)
+        assert np.all(correction == 0)
+        assert decoder.converged
+
+    def test_single_error_normalized(self):
+        """Normalized min-sum BP corrects single errors on Steane code."""
+        _, hZ = steaneCode()
+        for qubit in range(7):
+            error = np.zeros(7, dtype=int)
+            error[qubit] = 1
+            syndrome = hZ @ error % 2
+            decoder = MinSumDecoder(hZ, channelProb=0.1, maxIterations=50, mode="normalized", alpha=0.8)
+            correction = decoder.decode(syndrome)
+            assert np.array_equal(hZ @ correction % 2, syndrome), (
+                f"Normalized min-sum failed on qubit {qubit}"
+            )
+
+    def test_single_error_offset(self):
+        """Offset min-sum BP corrects single errors on Steane code."""
+        _, hZ = steaneCode()
+        for qubit in range(7):
+            error = np.zeros(7, dtype=int)
+            error[qubit] = 1
+            syndrome = hZ @ error % 2
+            decoder = MinSumDecoder(hZ, channelProb=0.1, maxIterations=50, mode="offset", beta=0.2)
+            correction = decoder.decode(syndrome)
+            assert np.array_equal(hZ @ correction % 2, syndrome), (
+                f"Offset min-sum failed on qubit {qubit}"
+            )
+
+    def test_repetition_code(self):
+        """Min-sum BP decodes a single error on repetition code."""
+        h = repetitionCode(5)
+        error = np.zeros(5, dtype=int)
+        error[2] = 1
+        syndrome = h @ error % 2
+        decoder = MinSumDecoder(h, channelProb=0.1, maxIterations=50)
+        correction = decoder.decode(syndrome)
+        assert np.array_equal(h @ correction % 2, syndrome)
+
+    def test_error_probabilities_shape(self):
+        """errorProbabilities should return array of length n."""
+        _, hZ = steaneCode()
+        decoder = MinSumDecoder(hZ, channelProb=0.1, maxIterations=10)
+        assert decoder.errorProbabilities.shape == (7,)
+
+    def test_error_probabilities_range(self):
+        """All error probabilities should be in [0, 1]."""
+        _, hZ = steaneCode()
+        decoder = MinSumDecoder(hZ, channelProb=0.1, maxIterations=50)
+        error = np.zeros(7, dtype=int)
+        error[3] = 1
+        syndrome = hZ @ error % 2
+        decoder.decode(syndrome)
+        probs = decoder.errorProbabilities
+        assert np.all(probs >= 0) and np.all(probs <= 1)
+
+
+class TestOSDDecoder:
+    def test_single_error_osd0(self):
+        """OSD-0 corrects single errors on Steane code."""
+        _, hZ = steaneCode()
+        osd = OSDDecoder(hZ, order=0)
+        for qubit in range(7):
+            error = np.zeros(7, dtype=int)
+            error[qubit] = 1
+            syndrome = hZ @ error % 2
+            correction = osd.decode(syndrome)
+            assert np.array_equal(hZ @ correction % 2, syndrome), (
+                f"OSD-0 failed on qubit {qubit}"
+            )
+
+    def test_osd_with_reliabilities(self):
+        """OSD uses reliability ordering from BP soft output."""
+        _, hZ = steaneCode()
+        osd = OSDDecoder(hZ, order=0)
+        error = np.zeros(7, dtype=int)
+        error[0] = 1
+        syndrome = hZ @ error % 2
+        # Simulate reliability: errored qubit has low reliability
+        reliabilities = np.ones(7) * 5.0
+        reliabilities[0] = 0.1
+        correction = osd.decode(syndrome, reliabilities=reliabilities)
+        assert np.array_equal(hZ @ correction % 2, syndrome)
+
+    def test_osd1_single_error(self):
+        """OSD-1 corrects single errors on Steane code."""
+        _, hZ = steaneCode()
+        osd = OSDDecoder(hZ, order=1)
+        error = np.zeros(7, dtype=int)
+        error[3] = 1
+        syndrome = hZ @ error % 2
+        correction = osd.decode(syndrome)
+        assert np.array_equal(hZ @ correction % 2, syndrome)
+
+    def test_zero_syndrome(self):
+        """OSD returns all-zero correction for zero syndrome."""
+        _, hZ = steaneCode()
+        osd = OSDDecoder(hZ, order=0)
+        syndrome = np.zeros(hZ.shape[0], dtype=int)
+        correction = osd.decode(syndrome)
+        assert np.all(correction == 0)
+
+    def test_repetition_code_osd(self):
+        """OSD-0 corrects single error on repetition code."""
+        h = repetitionCode(5)
+        osd = OSDDecoder(h, order=0)
+        error = np.zeros(5, dtype=int)
+        error[2] = 1
+        syndrome = h @ error % 2
+        correction = osd.decode(syndrome)
+        assert np.array_equal(h @ correction % 2, syndrome)

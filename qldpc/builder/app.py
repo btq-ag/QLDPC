@@ -7545,7 +7545,7 @@ class CircuitBuilder3D:
 
         return grid_x, grid_y
 
-    def _get_component_at_position(self, grid_x: int, grid_y: int) -> Optional[Component3D]:
+    def _get_component_at_position(self, grid_x: int, grid_y: int) -> Component3D | None:
         """Get component at specified grid position."""
         for component in self.components:
             comp_x, comp_y, comp_z = component.position

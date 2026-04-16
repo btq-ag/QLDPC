@@ -11,8 +11,9 @@ import json
 import os
 import tkinter as tk
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from tkinter import ttk
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .main import CircuitBuilder3D
@@ -61,16 +62,16 @@ class BaseTutorialScreen(ABC):
         self.circuit_builder = circuit_builder
         self.on_complete = on_complete_callback
         self.current_step = 0
-        self.tutorial_window: Optional[tk.Toplevel] = None
+        self.tutorial_window: tk.Toplevel | None = None
         self.demo_components: list = []
 
         # UI elements (set by subclasses)
-        self.title_label: Optional[tk.Label] = None
-        self.step_label: Optional[tk.Label] = None
-        self.progress_bar: Optional[tk.Frame] = None
-        self.content_text: Optional[tk.Text] = None
-        self.prev_btn: Optional[tk.Button] = None
-        self.next_btn: Optional[tk.Button] = None
+        self.title_label: tk.Label | None = None
+        self.step_label: tk.Label | None = None
+        self.progress_bar: tk.Frame | None = None
+        self.content_text: tk.Text | None = None
+        self.prev_btn: tk.Button | None = None
+        self.next_btn: tk.Button | None = None
 
         # Must be set by subclasses
         self.steps: list[dict[str, Any]] = []

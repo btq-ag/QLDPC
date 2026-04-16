@@ -43,10 +43,10 @@ docs/                   Technical documentation
 
 ## Code Style
 
-- Python 3.9+ syntax (no walrus operators in hot paths)
+- Python 3.10+ syntax
 - Type hints on public APIs
 - Docstrings for classes and public methods
-- `camelCase` preferred for new local variables (gradual migration)
+- `camelCase` required for all identifiers (enforced via ruff ignores for N80x)
 
 ## Submitting Changes
 

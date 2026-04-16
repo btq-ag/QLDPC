@@ -6,10 +6,10 @@ Interactive Python toolkit for quantum LDPC error correction.
 
 Build and simulate quantum LDPC circuits interactively. The toolkit includes:
 
-- **Circuit Builder** — Drag-and-drop 3D circuit construction with isometric rendering
-- **LDPC Simulator** — Real-time belief propagation with cavity QED parameters
-- **Tanner Graph 3D** — Interactive 3D topology explorer
-- **Threshold Landscape** — 3D error threshold surfaces across code families
+- **Circuit Builder:** Drag-and-drop 3D circuit construction with isometric rendering
+- **LDPC Simulator:** Real-time belief propagation with cavity QED parameters
+- **Tanner Graph 3D:** Interactive 3D topology explorer
+- **Threshold Landscape:** 3D error threshold surfaces across code families
 
 ## Quick Install
 
@@ -30,6 +30,6 @@ qldpc-threshold     # 3D threshold landscape
 
 ## Navigation
 
-- [Getting Started](getting-started/installation.md) — Installation and first steps
-- [User Guide](guide/circuit-builder.md) — Tool-by-tool walkthroughs
-- [API Reference](api/qldpc.md) — Full module documentation
+- [Getting Started](getting-started/installation.md): Installation and first steps
+- [User Guide](guide/circuit-builder.md): Tool-by-tool walkthroughs
+- [API Reference](api/qldpc.md): Full module documentation

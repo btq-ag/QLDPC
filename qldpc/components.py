@@ -135,8 +135,8 @@ class Component3D:
     rotation: float = 0.0
     size: tuple[float, float, float] = (1.0, 1.0, 1.0)
     color: tuple[float, float, float] = (0.5, 0.5, 0.8)
-    connections: Optional[list[int]] = None
-    properties: Optional[dict[str, Any]] = None
+    connections: list[int] | None = None
+    properties: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.connections is None:
@@ -158,7 +158,7 @@ class Component3D:
 
     @classmethod
     def from_dict(
-        cls, data: dict[str, Any], color_override: Optional[tuple[float, float, float]] = None
+        cls, data: dict[str, Any], color_override: tuple[float, float, float] | None = None
     ) -> Optional["Component3D"]:
         """
         Deserialize a component from a dictionary.
@@ -202,14 +202,14 @@ class Component3D:
         return ComponentType.is_two_qubit_gate(self.component_type)
 
     @property
-    def control_lane(self) -> Optional[int]:
+    def control_lane(self) -> int | None:
         """Get the control qubit lane for two-qubit gates."""
         if self.is_two_qubit and self.properties is not None:
             return self.properties.get("control", self.position[1])
         return None
 
     @property
-    def target_lane(self) -> Optional[int]:
+    def target_lane(self) -> int | None:
         """Get the target qubit lane for two-qubit gates."""
         if self.is_two_qubit and self.properties is not None:
             return self.properties.get("target", self.position[1] + 1)

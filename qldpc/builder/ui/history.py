@@ -6,7 +6,7 @@ user actions in the circuit builder.
 Author: Jeffrey Morais"""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..components import Component3D
@@ -244,7 +244,7 @@ class CommandHistory:
             return True
         return False
 
-    def undo(self) -> Optional[Command]:
+    def undo(self) -> Command | None:
         """
         Undo the last command.
 
@@ -258,7 +258,7 @@ class CommandHistory:
                 return command
         return None
 
-    def redo(self) -> Optional[Command]:
+    def redo(self) -> Command | None:
         """
         Redo the last undone command.
 
@@ -285,14 +285,14 @@ class CommandHistory:
         return self._current_index < len(self._history) - 1
 
     @property
-    def undo_description(self) -> Optional[str]:
+    def undo_description(self) -> str | None:
         """Get description of the next command to undo."""
         if self.can_undo:
             return self._history[self._current_index].description
         return None
 
     @property
-    def redo_description(self) -> Optional[str]:
+    def redo_description(self) -> str | None:
         """Get description of the next command to redo."""
         if self.can_redo:
             return self._history[self._current_index + 1].description

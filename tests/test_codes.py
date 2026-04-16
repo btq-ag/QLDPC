@@ -6,6 +6,7 @@ from qldpc.codes import (
     _gf2NullSpace,
     _gf2Rank,
     _gf2RowReduce,
+    bivariateBicycleCode,
     codeParameters,
     hammingCode,
     hypergraphProduct,
@@ -183,3 +184,47 @@ class TestGF2LinearAlgebra:
     def test_gf2_rank(self):
         h = hammingCode()
         assert _gf2Rank(h) == 3
+
+
+class TestBivariateBicycleCode:
+    def test_css_valid_6x6(self):
+        """BB code over Z6 x Z6 satisfies CSS orthogonality."""
+        hX, hZ = bivariateBicycleCode(6, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        assert validateCss(hX, hZ)
+
+    def test_shape_6x6(self):
+        """Block length = 2 * ell * m for BB codes."""
+        hX, hZ = bivariateBicycleCode(6, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        assert hX.shape[1] == 2 * 6 * 6  # n = 72
+        assert hZ.shape[1] == 2 * 6 * 6
+
+    def test_css_valid_12x6(self):
+        """BB code over Z12 x Z6 satisfies CSS orthogonality."""
+        hX, hZ = bivariateBicycleCode(12, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        assert validateCss(hX, hZ)
+
+    def test_shape_12x6(self):
+        hX, hZ = bivariateBicycleCode(12, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        assert hX.shape[1] == 2 * 12 * 6  # n = 144
+        assert hZ.shape[1] == 2 * 12 * 6
+
+    def test_css_valid_15x3(self):
+        """BB code over Z15 x Z3 satisfies CSS orthogonality."""
+        hX, hZ = bivariateBicycleCode(15, 3, [(9, 0), (0, 1), (0, 2)], [(0, 0), (2, 0), (7, 0)])
+        assert validateCss(hX, hZ)
+
+    def test_binary_entries(self):
+        """All entries in hX and hZ should be 0 or 1."""
+        hX, hZ = bivariateBicycleCode(6, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        assert set(np.unique(hX)).issubset({0, 1})
+        assert set(np.unique(hZ)).issubset({0, 1})
+
+    def test_parameters_72(self):
+        """[[72,12,d]] code has 12 logical qubits."""
+        hX, hZ = bivariateBicycleCode(6, 6, [(3, 0), (0, 1), (0, 2)], [(0, 3), (1, 0), (2, 0)])
+        n = hX.shape[1]
+        rankX = _gf2Rank(hX)
+        rankZ = _gf2Rank(hZ)
+        k = n - rankX - rankZ
+        assert n == 72
+        assert k == 12

@@ -9,6 +9,7 @@ Author: Jeffrey Morais
 """
 
 from qldpc.codes import (
+    bivariateBicycleCode,
     buildSyndromeCircuit,
     codeDistance,
     codeParameters,
@@ -21,7 +22,7 @@ from qldpc.codes import (
 )
 from qldpc.components import Component3D, ComponentType, ViewMode
 from qldpc.config import LDPC_COLORS, ColorPalette, Config, GridConfig
-from qldpc.decoders import BeliefPropagationDecoder
+from qldpc.decoders import BeliefPropagationDecoder, MinSumDecoder, OSDDecoder
 from qldpc.noise import (
     bitflipChannel,
     depolarizingChannel,
@@ -43,11 +44,14 @@ __all__ = [
     "LDPC_COLORS",
     "QuantumLDPCProcessor",
     "BeliefPropagationDecoder",
+    "MinSumDecoder",
+    "OSDDecoder",
     "validateCss",
     "steaneCode",
     "shorCode",
     "repetitionCode",
     "hypergraphProduct",
+    "bivariateBicycleCode",
     "codeParameters",
     "codeDistance",
     "logicalOperators",

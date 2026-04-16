@@ -5,7 +5,7 @@ This module handles quantum circuit construction, syndrome calculation,
 error correction decoding, and quantum state simulation.
 Author: Jeffrey Morais"""
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -47,7 +47,7 @@ class QuantumLDPCProcessor:
 
     def build_circuit_from_components(
         self, components: list[Component3D]
-    ) -> Optional[QuantumCircuit]:
+    ) -> QuantumCircuit | None:
         """
         Build a Qiskit quantum circuit from placed components.
 
@@ -355,7 +355,7 @@ class QuantumLDPCProcessor:
         return result
 
     def simulate_evolution(
-        self, components: list[Component3D], shots: Optional[int] = None
+        self, components: list[Component3D], shots: int | None = None
     ) -> dict[str, Any]:
         """
         Simulate quantum state evolution for the circuit.
@@ -403,7 +403,7 @@ class QuantumLDPCProcessor:
             # Fallback simulation info
             return {"success": True, "fallback": True, "circuit_info": circuit}
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Clear syndrome and correction history."""
         self.syndrome_history.clear()
         self.error_corrections.clear()
