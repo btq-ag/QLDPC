@@ -8,7 +8,6 @@ can be imported without errors.
 import pytest
 
 
-
 def test_import_qldpc():
     """Top-level package imports cleanly."""
     import qldpc
