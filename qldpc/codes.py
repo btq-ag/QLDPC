@@ -267,8 +267,8 @@ def _minWeightInQuotient(
     if not quotientBasis:
         return n + 1
 
-    quotientBasis = np.array(quotientBasis)
-    qDim = len(quotientBasis)
+    quotientArr = np.array(quotientBasis)
+    qDim = len(quotientArr)
     sDim = len(stabBasis) if stabBasis.size > 0 else 0
 
     # Safety check: exponential enumeration
@@ -287,7 +287,7 @@ def _minWeightInQuotient(
         qVec = np.zeros(n, dtype=int)
         for b in range(qDim):
             if qMask & (1 << b):
-                qVec = (qVec + quotientBasis[b]) % 2
+                qVec = (qVec + quotientArr[b]) % 2
 
         if sDim == 0:
             w = int(np.sum(qVec))
