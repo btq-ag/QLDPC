@@ -6,7 +6,7 @@ user actions in the circuit builder.
 Author: Jeffrey Morais"""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ..components import Component3D
@@ -35,7 +35,7 @@ class Command(ABC):
 class PlaceComponentCommand(Command):
     """Command for placing a component on the circuit."""
 
-    def __init__(self, component: "Component3D", components_list: List["Component3D"]):
+    def __init__(self, component: "Component3D", components_list: list["Component3D"]):
         """
         Initialize the place command.
 
@@ -68,7 +68,7 @@ class PlaceComponentCommand(Command):
 class DeleteComponentCommand(Command):
     """Command for deleting a component from the circuit."""
 
-    def __init__(self, component: "Component3D", components_list: List["Component3D"]):
+    def __init__(self, component: "Component3D", components_list: list["Component3D"]):
         """
         Initialize the delete command.
 
@@ -168,7 +168,7 @@ class RotateComponentCommand(Command):
 class BatchCommand(Command):
     """Command that groups multiple commands together."""
 
-    def __init__(self, commands: List[Command], description_text: str = "Batch operation"):
+    def __init__(self, commands: list[Command], description_text: str = "Batch operation"):
         """
         Initialize the batch command.
 
@@ -215,7 +215,7 @@ class CommandHistory:
             max_size: Maximum number of commands to keep in history
         """
         self.max_size = max_size
-        self._history: List[Command] = []
+        self._history: list[Command] = []
         self._current_index: int = -1  # Points to the last executed command
 
     def execute(self, command: Command) -> bool:

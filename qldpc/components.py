@@ -7,7 +7,7 @@ Author: Jeffrey Morais"""
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 
 class ViewMode(Enum):
@@ -131,12 +131,12 @@ class Component3D:
     """
 
     component_type: ComponentType
-    position: Tuple[int, int, int]
+    position: tuple[int, int, int]
     rotation: float = 0.0
-    size: Tuple[float, float, float] = (1.0, 1.0, 1.0)
-    color: Tuple[float, float, float] = (0.5, 0.5, 0.8)
-    connections: List[int] = None
-    properties: Dict[str, Any] = None
+    size: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    color: tuple[float, float, float] = (0.5, 0.5, 0.8)
+    connections: Optional[list[int]] = None
+    properties: Optional[dict[str, Any]] = None
 
     def __post_init__(self):
         if self.connections is None:
@@ -144,7 +144,7 @@ class Component3D:
         if self.properties is None:
             self.properties = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the component to a dictionary."""
         return {
             "type": self.component_type.value,
@@ -158,7 +158,7 @@ class Component3D:
 
     @classmethod
     def from_dict(
-        cls, data: Dict[str, Any], color_override: Optional[Tuple[float, float, float]] = None
+        cls, data: dict[str, Any], color_override: Optional[tuple[float, float, float]] = None
     ) -> Optional["Component3D"]:
         """
         Deserialize a component from a dictionary.
@@ -204,14 +204,14 @@ class Component3D:
     @property
     def control_lane(self) -> Optional[int]:
         """Get the control qubit lane for two-qubit gates."""
-        if self.is_two_qubit:
+        if self.is_two_qubit and self.properties is not None:
             return self.properties.get("control", self.position[1])
         return None
 
     @property
     def target_lane(self) -> Optional[int]:
         """Get the target qubit lane for two-qubit gates."""
-        if self.is_two_qubit:
+        if self.is_two_qubit and self.properties is not None:
             return self.properties.get("target", self.position[1] + 1)
         return None
 
@@ -276,7 +276,7 @@ LDPC_PHYSICAL_CATEGORIES = {
 }
 
 
-def get_categories_for_mode(view_mode: ViewMode) -> Dict[str, List[ComponentType]]:
+def get_categories_for_mode(view_mode: ViewMode) -> dict[str, list[ComponentType]]:
     """Get the component categories for the given view mode."""
     if view_mode == ViewMode.SURFACE_CODE_2D:
         return SURFACE_MODE_CATEGORIES

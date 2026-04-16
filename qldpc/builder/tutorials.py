@@ -12,7 +12,7 @@ import os
 import tkinter as tk
 from abc import ABC, abstractmethod
 from tkinter import ttk
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
     from .main import CircuitBuilder3D
@@ -62,7 +62,7 @@ class BaseTutorialScreen(ABC):
         self.on_complete = on_complete_callback
         self.current_step = 0
         self.tutorial_window: Optional[tk.Toplevel] = None
-        self.demo_components: List = []
+        self.demo_components: list = []
 
         # UI elements (set by subclasses)
         self.title_label: Optional[tk.Label] = None
@@ -73,7 +73,7 @@ class BaseTutorialScreen(ABC):
         self.next_btn: Optional[tk.Button] = None
 
         # Must be set by subclasses
-        self.steps: List[Dict[str, Any]] = []
+        self.steps: list[dict[str, Any]] = []
 
     @property
     @abstractmethod
@@ -94,7 +94,7 @@ class BaseTutorialScreen(ABC):
         pass
 
     @abstractmethod
-    def _create_tutorial_steps(self) -> List[Dict[str, Any]]:
+    def _create_tutorial_steps(self) -> list[dict[str, Any]]:
         """Create and return the tutorial step definitions."""
         pass
 

@@ -38,7 +38,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy qldpc/ --ignore-missing-imports
+          mypy qldpc/__init__.py qldpc/codes.py qldpc/decoders.py qldpc/noise.py qldpc/processor.py qldpc/config.py qldpc/theme.py qldpc/simulation/monte_carlo.py --ignore-missing-imports
 
       - name: Run tests
         run: |

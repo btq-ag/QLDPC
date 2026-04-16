@@ -6,7 +6,6 @@ to make the codebase more maintainable and customizable.
 Author: Jeffrey Morais"""
 
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
 
 
 @dataclass
@@ -62,7 +61,7 @@ class SimulationConfig:
 # ==================== COLOR PALETTES ====================
 
 # LDPC Color Palette (split-complementary scheme)
-LDPC_COLORS: Dict[str, str] = {
+LDPC_COLORS: dict[str, str] = {
     "data_qubit": "#2EC4B6",  # Teal - calming, represents stable data
     "x_check": "#FF6B6B",  # Coral/Salmon - warm, X-type stabilizer
     "z_check": "#FFD93D",  # Gold/Amber - warm, Z-type stabilizer
@@ -118,7 +117,7 @@ class ColorPalette:
 
 
 # Component color mappings (RGB tuples, 0-1 range)
-COMPONENT_COLORS: Dict[str, Tuple[float, float, float]] = {
+COMPONENT_COLORS: dict[str, tuple[float, float, float]] = {
     # Single qubit gates - distinct blue shades
     "X_GATE": (0.1, 0.3, 0.9),
     "Z_GATE": (0.2, 0.5, 0.7),
@@ -180,7 +179,7 @@ class Config:
     tutorial_config_filename: str = ".tutorial_config.json"
 
     @classmethod
-    def get_component_color(cls, component_name: str) -> Tuple[float, float, float]:
+    def get_component_color(cls, component_name: str) -> tuple[float, float, float]:
         """Get RGB color tuple for a component type."""
         return COMPONENT_COLORS.get(component_name, (0.5, 0.5, 0.5))
 

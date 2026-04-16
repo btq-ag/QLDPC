@@ -7,7 +7,6 @@ Author: Jeffrey Morais"""
 
 import math
 import tkinter as tk
-from typing import List, Tuple
 
 from ..config import DEFAULT_CONFIG
 
@@ -39,7 +38,7 @@ class IsometricRenderer:
         self.cos_30 = math.cos(math.radians(30))
         self.sin_30 = math.sin(math.radians(30))
 
-    def project_3d_to_2d(self, x: float, y: float, z: float) -> Tuple[float, float]:
+    def project_3d_to_2d(self, x: float, y: float, z: float) -> tuple[float, float]:
         """
         Convert 3D coordinates to 2D isometric projection.
 
@@ -53,7 +52,7 @@ class IsometricRenderer:
         iso_y = (x + y) * self.sin_30 * self.scale - z * self.scale + self.offset_y
         return iso_x, iso_y
 
-    def screen_to_grid(self, screen_x: float, screen_y: float) -> Tuple[int, int]:
+    def screen_to_grid(self, screen_x: float, screen_y: float) -> tuple[int, int]:
         """
         Convert screen coordinates to grid coordinates.
 
@@ -86,9 +85,9 @@ class IsometricRenderer:
         width: float,
         height: float,
         depth: float,
-        color: Tuple[float, float, float],
+        color: tuple[float, float, float],
         outline: str = "#333333",
-    ) -> List[int]:
+    ) -> list[int]:
         """
         Draw a 3D cube using isometric projection.
 
@@ -277,7 +276,7 @@ class IsometricRenderer:
         canvas: tk.Canvas,
         cx: float,
         cy: float,
-        color: Tuple[float, float, float],
+        color: tuple[float, float, float],
         depth: float = 1.0,
     ) -> None:
         """
@@ -391,14 +390,14 @@ class IsometricRenderer:
         )
 
     @staticmethod
-    def _rgb_to_hex(color: Tuple[float, float, float]) -> str:
+    def _rgb_to_hex(color: tuple[float, float, float]) -> str:
         """Convert RGB tuple (0-1 range) to hex color string."""
         r, g, b = [int(c * 255) for c in color]
         return f"#{r:02x}{g:02x}{b:02x}"
 
     @staticmethod
     def _brighten_color(
-        color: Tuple[float, float, float], factor: float
-    ) -> Tuple[float, float, float]:
+        color: tuple[float, float, float], factor: float
+    ) -> tuple[float, float, float]:
         """Brighten or darken a color by a given factor."""
         return tuple(min(1.0, c * factor) for c in color)

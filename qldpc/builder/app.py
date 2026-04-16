@@ -18,7 +18,7 @@ import math
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 
@@ -201,7 +201,7 @@ class TutorialScreen:
         # Define tutorial steps with rich content
         self.steps = self._create_tutorial_steps()
 
-    def _create_tutorial_steps(self) -> List[Dict[str, Any]]:
+    def _create_tutorial_steps(self) -> list[dict[str, Any]]:
         """Create the tutorial content with tagged text for coloring."""
         return [
             # Step 0: Welcome
@@ -1264,7 +1264,7 @@ class SurfaceCodeTutorialScreen:
         # Define surface code tutorial steps
         self.steps = self._create_tutorial_steps()
 
-    def _create_tutorial_steps(self) -> List[Dict[str, Any]]:
+    def _create_tutorial_steps(self) -> list[dict[str, Any]]:
         """Create the Surface Code tutorial content."""
         return [
             # Step 0: What is the Surface Code?
@@ -1838,7 +1838,7 @@ class SurfaceCodeTutorialScreen:
             "Try 'Highlight Syndrome' to see which stabilizers detect the error!"
         )
 
-    def _place_surface_demo_components(self, specs: List[Tuple]):
+    def _place_surface_demo_components(self, specs: list[tuple]):
         """Place demo components on the surface lattice using integer coordinates."""
         if not self.circuit_builder:
             return
@@ -1992,7 +1992,7 @@ class AdvancedLargeCircuitsTutorial:
 
         self.steps = self._create_tutorial_steps()
 
-    def _create_tutorial_steps(self) -> List[Dict[str, Any]]:
+    def _create_tutorial_steps(self) -> list[dict[str, Any]]:
         """Create advanced circuit-mode tutorial with 8 large practical quantum circuits."""
         return [
             {
@@ -2270,7 +2270,7 @@ class AdvancedLargeCircuitsTutorial:
 
         # Larger window positioned on LEFT side so grid is visible on RIGHT
         self.tutorial_window.update_idletasks()
-        screen_width = self.tutorial_window.winfo_screenwidth()
+        self.tutorial_window.winfo_screenwidth()
         screen_height = self.tutorial_window.winfo_screenheight()
 
         # Window size: wider to fit content, but not too tall
@@ -3204,7 +3204,7 @@ class SurfaceCodeTutorial:
 
         self.steps = self._create_tutorial_steps()
 
-    def _create_tutorial_steps(self) -> List[Dict[str, Any]]:
+    def _create_tutorial_steps(self) -> list[dict[str, Any]]:
         """Create surface code tutorial with visual QEC demos."""
         return [
             {
@@ -3489,7 +3489,7 @@ class SurfaceCodeTutorial:
 
         # Position on left side
         self.tutorial_window.update_idletasks()
-        screen_width = self.tutorial_window.winfo_screenwidth()
+        self.tutorial_window.winfo_screenwidth()
         screen_height = self.tutorial_window.winfo_screenheight()
 
         win_width = 480
@@ -6181,20 +6181,8 @@ class CircuitBuilder3D:
         # Generate HGP connectivity (seed codes with expansion)
         # First seed code: 3-regular bipartite graph (bits connect to non-adjacent checks)
         # This creates the "horizontal strings"
-        seed1_connections = [
-            [0, 2, 4],  # Check 0 in seed connects to bits 0, 2, 4 (long range)
-            [1, 3, 5],  # Check 1 in seed connects to bits 1, 3, 5
-            [0, 3, 4],  # Check 2 connects with some overlap
-            [1, 2, 5],  # Check 3 connects with some overlap
-        ]
 
         # Second seed code: similar structure for "vertical strings"
-        seed2_connections = [
-            [0, 2],  # Vertical connectivity
-            [1, 3],
-            [0, 3],
-            [1, 2],
-        ]
 
         # Draw title and mode indicator
         self.canvas.create_text(
@@ -7533,7 +7521,7 @@ class CircuitBuilder3D:
         """Handle middle mouse button release."""
         self.panning = False
 
-    def _screen_to_grid(self, screen_x: float, screen_y: float) -> Tuple[int, int]:
+    def _screen_to_grid(self, screen_x: float, screen_y: float) -> tuple[int, int]:
         """Convert screen coordinates to grid coordinates."""
         # Reverse isometric projection (approximate)
         relative_x = screen_x - self.renderer.offset_x
@@ -7630,7 +7618,7 @@ class CircuitBuilder3D:
         self._log_status(f"Placed {self.current_tool.value} at ({grid_x}, {grid_y}, {grid_z})")
         self._redraw_circuit()
 
-    def _get_component_color(self, component_type: ComponentType) -> Tuple[float, float, float]:
+    def _get_component_color(self, component_type: ComponentType) -> tuple[float, float, float]:
         """Get color for component type."""
         color_map = {
             # Single qubit gates - DISTINCT colors for easy identification
@@ -7749,7 +7737,7 @@ class CircuitBuilder3D:
                 ComponentType.CZ_GATE,
                 ComponentType.SWAP_GATE,
             ]
-            controlled_gate_types = getattr(self, "CONTROLLED_GATE_TYPES", [])
+            getattr(self, "CONTROLLED_GATE_TYPES", [])
 
             if component.component_type in two_qubit_types:
                 control_y = component.properties.get("control", y)
@@ -9582,9 +9570,9 @@ class CircuitBuilder3D:
             return
 
         # Count errors by type
-        x_errors = sum(1 for e in self.circuit_errors.values() if e == "X")
-        y_errors = sum(1 for e in self.circuit_errors.values() if e == "Y")
-        z_errors = sum(1 for e in self.circuit_errors.values() if e == "Z")
+        sum(1 for e in self.circuit_errors.values() if e == "X")
+        sum(1 for e in self.circuit_errors.values() if e == "Y")
+        sum(1 for e in self.circuit_errors.values() if e == "Z")
 
         # Simple syndrome: each error contributes to syndrome based on position
         # This is a placeholder - real implementation would use the actual stabilizer structure
@@ -10704,7 +10692,7 @@ class CircuitBuilder3D:
         self.legend_window.update_idletasks()
         main_x = self.root.winfo_x()
         main_y = self.root.winfo_y()
-        main_width = self.root.winfo_width()
+        self.root.winfo_width()
         # Place inside the main window, offset from left edge
         x = main_x + 50
         y = main_y + 50
@@ -10851,13 +10839,6 @@ class CircuitBuilder3D:
         item_frame.pack(fill=tk.X, pady=2, padx=5)
 
         # Check if this is a surface code component
-        surface_types = [
-            ComponentType.SURFACE_DATA,
-            ComponentType.SURFACE_X_STABILIZER,
-            ComponentType.SURFACE_Z_STABILIZER,
-            ComponentType.SURFACE_BOUNDARY,
-        ]
-        is_surface = comp_type in surface_types
 
         # Two-qubit gates get a wider preview canvas
         two_qubit_types = [ComponentType.CNOT_GATE, ComponentType.CZ_GATE, ComponentType.SWAP_GATE]
