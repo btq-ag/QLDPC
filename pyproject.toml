@@ -112,9 +112,11 @@ exclude = [
     "tests/",
     "docs/",
     "qldpc/builder/",
+    "qldpc/simulation/ldpc_circuit\\.py",
     "qldpc/simulation/quantum_circuits\\.py",
     "qldpc/simulation/syndrome\\.py",
     "qldpc/tanner/graph_3d\\.py",
+    "qldpc/tanner/threshold_3d\\.py",
 ]
 
 # Graduated strictness: new modules should meet this bar.

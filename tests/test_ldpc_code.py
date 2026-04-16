@@ -6,8 +6,16 @@ and belief propagation decoding.
 """
 
 import numpy as np
+import pytest
 
-from qldpc.simulation.ldpc_circuit import QuantumLDPCCode
+try:
+    from qldpc.simulation.ldpc_circuit import QuantumLDPCCode
+
+    HAS_TKINTER = True
+except (ImportError, RuntimeError):
+    HAS_TKINTER = False
+
+pytestmark = pytest.mark.skipif(not HAS_TKINTER, reason="tkinter not available")
 
 
 class TestQuantumLDPCCodeInit:

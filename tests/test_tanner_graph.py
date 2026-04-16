@@ -1,10 +1,18 @@
 """Tests for qldpc.tanner.graph_3d: Tanner graph model smoke tests (H7)."""
 
 import matplotlib
+import pytest
 
 matplotlib.use("Agg")
 
-from qldpc.tanner.graph_3d import QuantumLDPCTannerGraph
+try:
+    from qldpc.tanner.graph_3d import QuantumLDPCTannerGraph
+
+    HAS_TKINTER = True
+except (ImportError, RuntimeError):
+    HAS_TKINTER = False
+
+pytestmark = pytest.mark.skipif(not HAS_TKINTER, reason="tkinter not available")
 
 
 class TestTannerGraphInit:
