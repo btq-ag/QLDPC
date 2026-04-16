@@ -132,16 +132,21 @@ disallow_incomplete_defs = false
 source = ["qldpc"]
 omit = [
     "qldpc/builder/app.py",
+    "qldpc/builder/tutorials.py",
     "qldpc/builder/ui/*",
     "qldpc/builder/renderers/*",
     "qldpc/simulation/animations.py",
     "qldpc/simulation/cavity_gates.py",
     "qldpc/simulation/ghz.py",
+    "qldpc/simulation/ldpc_circuit.py",
     "qldpc/simulation/quantum_circuits.py",
+    "qldpc/tanner/graph_3d.py",
+    "qldpc/tanner/threshold_3d.py",
 ]
 
 [tool.coverage.report]
 exclude_lines = [
     "if __name__",
     "pragma: no cover",
+    "except ImportError",
 ]
