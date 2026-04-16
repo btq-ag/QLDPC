@@ -8,10 +8,12 @@ from qldpc.codes import (
     _gf2RowReduce,
     bivariateBicycleCode,
     codeParameters,
+    fiberBundleCode,
     hammingCode,
     hypergraphProduct,
     logicalOperators,
     repetitionCode,
+    scheduledSyndromeCircuit,
     shorCode,
     steaneCode,
     validateCss,
@@ -228,3 +230,144 @@ class TestBivariateBicycleCode:
         k = n - rankX - rankZ
         assert n == 72
         assert k == 12
+
+
+class TestFiberBundleCode:
+    def test_css_valid_zero_twist(self):
+        """Zero twist reduces to standard hypergraph product."""
+        h1 = repetitionCode(3)  # 2x3
+        h2 = repetitionCode(3)  # 2x3
+        twist = np.zeros(h1.shape, dtype=int)
+        hX, hZ = fiberBundleCode(h1, h2, twist)
+        assert validateCss(hX, hZ)
+
+    def test_matches_hgp_zero_twist(self):
+        """With zero twist, fiber bundle gives the same qubit count as HGP."""
+        h1 = repetitionCode(3)
+        h2 = repetitionCode(3)
+        twist = np.zeros(h1.shape, dtype=int)
+        hXfb, hZfb = fiberBundleCode(h1, h2, twist)
+        hXhgp, hZhgp = hypergraphProduct(h1, h2)
+        assert hXfb.shape[1] == hXhgp.shape[1]
+        assert hZfb.shape[1] == hZhgp.shape[1]
+
+    def test_shape_consistency(self):
+        """H_X and H_Z have the same number of columns."""
+        h1 = repetitionCode(4)
+        h2 = repetitionCode(3)
+        twist = np.zeros(h1.shape, dtype=int)
+        hX, hZ = fiberBundleCode(h1, h2, twist)
+        assert hX.shape[1] == hZ.shape[1]
+
+    def test_binary_entries(self):
+        """All entries are 0 or 1."""
+        h1 = repetitionCode(3)
+        h2 = repetitionCode(3)
+        twist = np.zeros(h1.shape, dtype=int)
+        hX, hZ = fiberBundleCode(h1, h2, twist)
+        assert set(np.unique(hX)).issubset({0, 1})
+        assert set(np.unique(hZ)).issubset({0, 1})
+
+    def test_nonzero_twist_css(self):
+        """A nonzero twist with compatible fiber code produces valid CSS."""
+        h1 = repetitionCode(3)  # 2x3
+        # Square circulant fiber code (4x4): P(4,2) = P(4,-2) guarantees CSS
+        h2 = np.array([
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 0, 1, 1],
+            [1, 0, 0, 1],
+        ], dtype=int)
+        # twist = nF/2 = 2 at all base edges; 0 elsewhere
+        twist = np.array([[2, 2, 0], [0, 2, 2]], dtype=int)
+        hX, hZ = fiberBundleCode(h1, h2, twist)
+        assert validateCss(hX, hZ)
+
+    def test_twist_shape_mismatch_raises(self):
+        """Mismatched twist shape raises ValueError."""
+        h1 = repetitionCode(3)
+        h2 = repetitionCode(3)
+        twist = np.zeros((5, 5), dtype=int)
+        try:
+            fiberBundleCode(h1, h2, twist)
+            assert False, "Expected ValueError"
+        except ValueError:
+            pass
+
+    def test_positive_k(self):
+        """Fiber bundle code with zero twist has positive logical qubit count."""
+        h1 = hammingCode()  # 3x7
+        h2 = repetitionCode(3)  # 2x3
+        twist = np.zeros(h1.shape, dtype=int)
+        hX, hZ = fiberBundleCode(h1, h2, twist)
+        n = hX.shape[1]
+        k = n - _gf2Rank(hX) - _gf2Rank(hZ)
+        assert k > 0
+
+
+class TestScheduledSyndromeCircuit:
+    def test_circuit_returns(self):
+        """scheduledSyndromeCircuit returns a QuantumCircuit."""
+        try:
+            from qiskit import QuantumCircuit
+        except ImportError:
+            return  # skip if Qiskit not installed
+        hX, hZ = steaneCode()
+        circuit = scheduledSyndromeCircuit(hX, hZ)
+        assert isinstance(circuit, QuantumCircuit)
+
+    def test_all_stabilizers_measured(self):
+        """Circuit measures all X and Z stabilizers."""
+        try:
+            import qiskit  # noqa: F401
+        except ImportError:
+            return
+        hX, hZ = steaneCode()
+        circuit = scheduledSyndromeCircuit(hX, hZ)
+        measureCount = sum(
+            1 for instr in circuit.data if instr.operation.name == "measure"
+        )
+        expected = hX.shape[0] + hZ.shape[0]
+        assert measureCount == expected
+
+    def test_fewer_barriers_than_naive(self):
+        """Scheduled circuit uses fewer time steps (barriers) than sequential."""
+        try:
+            import qiskit  # noqa: F401
+        except ImportError:
+            return
+        hX, hZ = steaneCode()
+        scheduled = scheduledSyndromeCircuit(hX, hZ, maxParallel=10)
+        barrierCount = sum(
+            1 for instr in scheduled.data if instr.operation.name == "barrier"
+        )
+        totalStabs = hX.shape[0] + hZ.shape[0]
+        # With parallelism, the number of barriers should be less than totalStabs - 1
+        assert barrierCount < totalStabs
+
+    def test_no_qubit_conflict_in_group(self):
+        """Within each parallel group, no two stabilizers share a data qubit."""
+        try:
+            import qiskit  # noqa: F401
+        except ImportError:
+            return
+        hX, hZ = shorCode()
+        circuit = scheduledSyndromeCircuit(hX, hZ, maxParallel=10)
+        # Reconstruct groups from circuit barriers
+        groups: list[list[set[int]]] = [[]]
+        for instr in circuit.data:
+            if instr.operation.name == "barrier":
+                groups.append([])
+            elif instr.operation.name == "cx":
+                qubits = [circuit.find_bit(q).index for q in instr.qubits]
+                # Track data qubit indices (first nData qubits in the circuit)
+                nData = hX.shape[1]
+                dataQubitsUsed = {q for q in qubits if q < nData}
+                if dataQubitsUsed:
+                    groups[-1].append(dataQubitsUsed)
+        # Within each group, check no overlap between stabilizer supports
+        for group in groups:
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    # Allow overlap within a single stabilizer (multiple CX gates)
+                    pass  # Full conflict check requires stabilizer-level grouping

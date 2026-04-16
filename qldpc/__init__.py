@@ -13,16 +13,23 @@ from qldpc.codes import (
     buildSyndromeCircuit,
     codeDistance,
     codeParameters,
+    fiberBundleCode,
     hypergraphProduct,
     logicalOperators,
     repetitionCode,
+    scheduledSyndromeCircuit,
     shorCode,
     steaneCode,
     validateCss,
 )
 from qldpc.components import Component3D, ComponentType, ViewMode
 from qldpc.config import LDPC_COLORS, ColorPalette, Config, GridConfig
-from qldpc.decoders import BeliefPropagationDecoder, MinSumDecoder, OSDDecoder
+from qldpc.decoders import (
+    BeliefPropagationDecoder,
+    MinSumDecoder,
+    OSDDecoder,
+    SlidingWindowDecoder,
+)
 from qldpc.noise import (
     bitflipChannel,
     depolarizingChannel,
@@ -46,16 +53,19 @@ __all__ = [
     "BeliefPropagationDecoder",
     "MinSumDecoder",
     "OSDDecoder",
+    "SlidingWindowDecoder",
     "validateCss",
     "steaneCode",
     "shorCode",
     "repetitionCode",
     "hypergraphProduct",
     "bivariateBicycleCode",
+    "fiberBundleCode",
     "codeParameters",
     "codeDistance",
     "logicalOperators",
     "buildSyndromeCircuit",
+    "scheduledSyndromeCircuit",
     "depolarizingChannel",
     "depolarizingErrors",
     "bitflipChannel",

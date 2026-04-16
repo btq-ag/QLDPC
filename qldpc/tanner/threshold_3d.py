@@ -88,11 +88,12 @@ class QuantumLDPCThresholdModel:
         else:
             exp = D
 
-        Z = np.where(
-            P < th,
-            np.exp(-exp * (th - P) / th),
-            (P / th) ** 0.5,
-        )
+        with np.errstate(over="ignore"):
+            Z = np.where(
+                P < th,
+                np.exp(-exp * (th - P) / th),
+                (P / th) ** 0.5,
+            )
         cavity = max(0.1, 1 - 1 / self.cooperativity)
         Z = Z * cavity * 10 + 0.01
         return P, D, Z

@@ -16,15 +16,24 @@ from .decoders import BeliefPropagationDecoder
 # Quantum computing libraries
 try:
     from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
-    from qiskit_aer import AerSimulator
+    from qiskit.primitives import StatevectorSampler
 
     QISKIT_AVAILABLE = True
+    V2_PRIMITIVES = True
 except ImportError:
-    QISKIT_AVAILABLE = False
-    QuantumCircuit = None
-    QuantumRegister = None
-    ClassicalRegister = None
-    print("Warning: Qiskit not available. Some quantum computations will be simulated.")
+    try:
+        from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
+        from qiskit_aer import AerSimulator
+
+        QISKIT_AVAILABLE = True
+        V2_PRIMITIVES = False
+    except ImportError:
+        QISKIT_AVAILABLE = False
+        V2_PRIMITIVES = False
+        QuantumCircuit = None
+        QuantumRegister = None
+        ClassicalRegister = None
+        print("Warning: Qiskit not available. Some quantum computations will be simulated.")
 
 
 class QuantumLDPCProcessor:
@@ -377,16 +386,34 @@ class QuantumLDPCProcessor:
 
         if QISKIT_AVAILABLE and hasattr(circuit, "num_qubits"):
             try:
-                simulator = AerSimulator()
-
                 # Add measurements if not present
                 if not any(instr.operation.name == "measure" for instr in circuit.data):
                     circuit.measure_all()
 
-                transpiled = transpile(circuit, simulator)
-                job = simulator.run(transpiled, shots=shots)
-                result = job.result()
-                counts = result.get_counts()
+                if V2_PRIMITIVES:
+                    # Use Qiskit V2 StatevectorSampler
+                    sampler = StatevectorSampler()
+                    pub = (circuit,)
+                    job = sampler.run([pub], shots=shots)
+                    pubResult = job.result()[0]
+                    countsMap = pubResult.data.meas.get_counts() if hasattr(pubResult.data, "meas") else {}
+                    if not countsMap:
+                        # Try the first classical register name
+                        for attr in dir(pubResult.data):
+                            if not attr.startswith("_"):
+                                reg = getattr(pubResult.data, attr, None)
+                                if reg is not None and hasattr(reg, "get_counts"):
+                                    countsMap = reg.get_counts()
+                                    if countsMap:
+                                        break
+                    counts = dict(countsMap)
+                else:
+                    # Fallback: legacy AerSimulator
+                    simulator = AerSimulator()
+                    transpiled = transpile(circuit, simulator)
+                    job = simulator.run(transpiled, shots=shots)
+                    result = job.result()
+                    counts = result.get_counts() if result is not None else {}
 
                 # Sort by count
                 sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)

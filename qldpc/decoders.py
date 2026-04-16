@@ -476,3 +476,137 @@ class OSDDecoder:
             # to avoid combinatorial explosion
 
         return bestE
+
+
+class SlidingWindowDecoder:
+    """Sliding window decoder for circuit-level syndrome data.
+
+    Processes W rounds of syndrome measurements by building an effective
+    parity check matrix that incorporates temporal correlations and
+    measurement errors. Delegates decoding of each window to an inner
+    belief propagation decoder.
+
+    The effective parity check matrix for a window of size W combines:
+      - Data block: W copies of H arranged block-diagonally (one per round)
+      - Measurement block: syndrome differences between consecutive rounds,
+        modeled with identity matrices that capture measurement errors
+
+    The decoder returns the correction for the oldest round in the window.
+    """
+
+    def __init__(
+        self,
+        parityMatrix: np.ndarray,
+        windowSize: int = 3,
+        channelProb: float = 0.05,
+        measurementErrorProb: float = 0.01,
+        maxIterations: int = 50,
+    ) -> None:
+        self.h = np.asarray(parityMatrix, dtype=int)
+        self.m, self.n = self.h.shape
+        self.windowSize = windowSize
+        self.channelProb = channelProb
+        self.measurementErrorProb = measurementErrorProb
+        self.maxIterations = maxIterations
+
+        # Build the effective parity check matrix for the full window
+        self._effectiveH = self._buildEffectiveMatrix()
+        self._innerDecoder = BeliefPropagationDecoder(
+            self._effectiveH,
+            channelProb=self.channelProb,
+            maxIterations=self.maxIterations,
+        )
+
+    def _buildEffectiveMatrix(self) -> np.ndarray:
+        """Construct the effective parity check matrix for the sliding window.
+
+        Layout (W rounds, m checks, n data qubits per round):
+
+        Rows: W*m syndrome rows + (W-1)*m difference rows
+        Cols: W*n data error variables + W*m measurement error variables
+
+        The data block has H on the diagonal for each round.
+        The measurement block uses identity matrices to capture syndrome
+        differences between consecutive rounds.
+        """
+        W = self.windowSize
+        m, n = self.m, self.n
+
+        # Total dimensions
+        nSyndromeRows = W * m
+        nDiffRows = (W - 1) * m
+        totalRows = nSyndromeRows + nDiffRows
+        nDataCols = W * n
+        nMeasCols = W * m
+        totalCols = nDataCols + nMeasCols
+
+        effectiveH = np.zeros((totalRows, totalCols), dtype=int)
+
+        # Data block: block-diagonal copies of H
+        for t in range(W):
+            rStart = t * m
+            cStart = t * n
+            effectiveH[rStart : rStart + m, cStart : cStart + n] = self.h
+
+        # Measurement error identity: each round's syndrome row gets an
+        # identity block for that round's measurement errors
+        for t in range(W):
+            rStart = t * m
+            cStart = nDataCols + t * m
+            effectiveH[rStart : rStart + m, cStart : cStart + m] = np.eye(m, dtype=int)
+
+        # Syndrome difference rows: s_t XOR s_{t+1} detects measurement flips
+        for t in range(W - 1):
+            rStart = nSyndromeRows + t * m
+            # Measurement error at round t
+            cMeas1 = nDataCols + t * m
+            effectiveH[rStart : rStart + m, cMeas1 : cMeas1 + m] = np.eye(m, dtype=int)
+            # Measurement error at round t+1
+            cMeas2 = nDataCols + (t + 1) * m
+            effectiveH[rStart : rStart + m, cMeas2 : cMeas2 + m] = (
+                effectiveH[rStart : rStart + m, cMeas2 : cMeas2 + m]
+                + np.eye(m, dtype=int)
+            ) % 2
+
+        return effectiveH % 2
+
+    def decode(self, syndromeHistory: np.ndarray) -> np.ndarray:
+        """Decode a window of syndrome measurements.
+
+        Parameters
+        ----------
+        syndromeHistory : array of shape (W, m)
+            Syndrome vectors from W consecutive measurement rounds.
+
+        Returns
+        -------
+        correction : array of shape (n,)
+            Estimated data error correction for the oldest round (round 0).
+        """
+        syndromeHistory = np.asarray(syndromeHistory, dtype=int)
+        W = self.windowSize
+        m = self.m
+
+        if syndromeHistory.shape != (W, m):
+            raise ValueError(
+                f"syndromeHistory shape {syndromeHistory.shape} must be ({W}, {m})."
+            )
+
+        # Build the effective syndrome vector
+        # First W*m entries: the syndromes from each round
+        flatSyndromes = syndromeHistory.flatten()
+
+        # Next (W-1)*m entries: syndrome differences between consecutive rounds
+        diffs = np.zeros((W - 1) * m, dtype=int)
+        for t in range(W - 1):
+            diffs[t * m : (t + 1) * m] = (
+                syndromeHistory[t] + syndromeHistory[t + 1]
+            ) % 2
+
+        effectiveSyndrome = np.concatenate([flatSyndromes, diffs])
+
+        # Decode using inner BP
+        fullCorrection = self._innerDecoder.decode(effectiveSyndrome)
+
+        # Extract correction for the oldest round (first n data variables)
+        return fullCorrection[: self.n].copy()

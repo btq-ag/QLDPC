@@ -101,6 +101,10 @@ ignore = [
 "qldpc/simulation/ghz.py" = ["E402"]
 "qldpc/simulation/quantum_circuits.py" = ["E402", "F401"]
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true

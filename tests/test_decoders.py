@@ -4,7 +4,12 @@ import numpy as np
 import pytest
 
 from qldpc.codes import repetitionCode, shorCode, steaneCode
-from qldpc.decoders import BeliefPropagationDecoder, MinSumDecoder, OSDDecoder
+from qldpc.decoders import (
+    BeliefPropagationDecoder,
+    MinSumDecoder,
+    OSDDecoder,
+    SlidingWindowDecoder,
+)
 
 
 class TestBeliefPropagationDecoder:
@@ -240,3 +245,66 @@ class TestOSDDecoder:
         syndrome = h @ error % 2
         correction = osd.decode(syndrome)
         assert np.array_equal(h @ correction % 2, syndrome)
+
+
+class TestSlidingWindowDecoder:
+    def test_zero_syndrome_no_correction(self):
+        """All-zero syndrome history returns all-zero correction."""
+        h = repetitionCode(5)
+        decoder = SlidingWindowDecoder(h, windowSize=3, channelProb=0.1)
+        syndromeHistory = np.zeros((3, h.shape[0]), dtype=int)
+        correction = decoder.decode(syndromeHistory)
+        assert np.all(correction == 0)
+
+    def test_output_shape(self):
+        """Correction vector has length n (number of data variables)."""
+        _, hZ = steaneCode()
+        decoder = SlidingWindowDecoder(hZ, windowSize=2, channelProb=0.1)
+        syndromeHistory = np.zeros((2, hZ.shape[0]), dtype=int)
+        correction = decoder.decode(syndromeHistory)
+        assert correction.shape == (hZ.shape[1],)
+
+    def test_single_round_consistent_syndrome(self):
+        """Consistent syndrome across all rounds decodes without error."""
+        h = repetitionCode(5)
+        error = np.zeros(5, dtype=int)
+        error[2] = 1
+        syndrome = h @ error % 2
+        # Same syndrome repeated across all rounds (no measurement errors)
+        syndromeHistory = np.tile(syndrome, (3, 1))
+        decoder = SlidingWindowDecoder(
+            h, windowSize=3, channelProb=0.1, maxIterations=100,
+        )
+        correction = decoder.decode(syndromeHistory)
+        # Correction for the oldest round should match the syndrome
+        residual = h @ correction % 2
+        assert np.array_equal(residual, syndrome)
+
+    def test_shape_mismatch_raises(self):
+        """Wrong syndromeHistory shape raises ValueError."""
+        h = repetitionCode(5)
+        decoder = SlidingWindowDecoder(h, windowSize=3)
+        badHistory = np.zeros((2, h.shape[0]), dtype=int)
+        with pytest.raises(ValueError, match="syndromeHistory shape"):
+            decoder.decode(badHistory)
+
+    def test_effective_matrix_shape(self):
+        """Effective matrix has correct dimensions."""
+        h = repetitionCode(5)  # 4x5
+        W = 3
+        decoder = SlidingWindowDecoder(h, windowSize=W)
+        m, n = h.shape
+        expectedRows = W * m + (W - 1) * m
+        expectedCols = W * n + W * m
+        assert decoder._effectiveH.shape == (expectedRows, expectedCols)
+
+    def test_window_size_one(self):
+        """Window of size 1 acts like standard single-round decoding."""
+        h = repetitionCode(5)
+        decoder = SlidingWindowDecoder(h, windowSize=1, channelProb=0.1, maxIterations=50)
+        error = np.zeros(5, dtype=int)
+        error[2] = 1
+        syndrome = (h @ error % 2).reshape(1, -1)
+        correction = decoder.decode(syndrome)
+        residual = h @ correction % 2
+        assert np.array_equal(residual, syndrome.flatten())

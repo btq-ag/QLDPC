@@ -424,6 +424,112 @@ def buildSyndromeCircuit(
     return circuit
 
 
+def scheduledSyndromeCircuit(
+    hX: np.ndarray,
+    hZ: np.ndarray,
+    maxParallel: int = 4,
+):  # noqa: F821
+    """Build a Qiskit QuantumCircuit with parallelized stabilizer measurements.
+
+    Groups X and Z stabilizer measurements by coloring the stabilizer
+    conflict graph (two stabilizers conflict if they share a data qubit).
+    Each color group executes in parallel, separated by barriers.
+
+    The greedy coloring algorithm assigns each stabilizer the smallest color
+    not used by any conflicting neighbor, then caps group size at maxParallel.
+
+    Requires Qiskit. Returns a QuantumCircuit with named registers:
+    dataQubits, xAncilla, zAncilla, xSyndrome, zSyndrome.
+    """
+    try:
+        from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
+    except ImportError:
+        raise ImportError(
+            "Qiskit is required for circuit generation. "
+            "Install with: pip install qiskit"
+        )
+
+    hX = np.asarray(hX, dtype=int)
+    hZ = np.asarray(hZ, dtype=int)
+    nData = hX.shape[1]
+    nXChecks = hX.shape[0]
+    nZChecks = hZ.shape[0]
+    totalStabs = nXChecks + nZChecks
+
+    # Build combined stabilizer support sets
+    supports: list[set[int]] = []
+    for i in range(nXChecks):
+        supports.append(set(int(j) for j in range(nData) if hX[i, j] == 1))
+    for i in range(nZChecks):
+        supports.append(set(int(j) for j in range(nData) if hZ[i, j] == 1))
+
+    # Build adjacency list for conflict graph
+    adjacency: list[list[int]] = [[] for _ in range(totalStabs)]
+    for a in range(totalStabs):
+        for b in range(a + 1, totalStabs):
+            if supports[a] & supports[b]:
+                adjacency[a].append(b)
+                adjacency[b].append(a)
+
+    # Greedy coloring
+    colors: list[int] = [-1] * totalStabs
+    for node in range(totalStabs):
+        usedColors: set[int] = set()
+        for neighbor in adjacency[node]:
+            if colors[neighbor] >= 0:
+                usedColors.add(colors[neighbor])
+        color = 0
+        while color in usedColors:
+            color += 1
+        colors[node] = color
+
+    # Group by color, split groups larger than maxParallel
+    numColors = max(colors) + 1 if colors else 0
+    rawGroups: list[list[int]] = [[] for _ in range(numColors)]
+    for node, color in enumerate(colors):
+        rawGroups[color].append(node)
+
+    groups: list[list[int]] = []
+    for grp in rawGroups:
+        for startIdx in range(0, len(grp), maxParallel):
+            groups.append(grp[startIdx : startIdx + maxParallel])
+
+    # Build circuit
+    dataQubits = QuantumRegister(nData, "dataQubits")
+    xAncilla = QuantumRegister(nXChecks, "xAncilla")
+    zAncilla = QuantumRegister(nZChecks, "zAncilla")
+    xSyndrome = ClassicalRegister(nXChecks, "xSyndrome")
+    zSyndrome = ClassicalRegister(nZChecks, "zSyndrome")
+
+    circuit = QuantumCircuit(
+        dataQubits, xAncilla, zAncilla, xSyndrome, zSyndrome
+    )
+
+    for gIdx, group in enumerate(groups):
+        for stabIdx in group:
+            if stabIdx < nXChecks:
+                # X-stabilizer measurement
+                i = stabIdx
+                circuit.h(xAncilla[i])
+                for j in range(nData):
+                    if hX[i, j] == 1:
+                        circuit.cx(xAncilla[i], dataQubits[j])
+                circuit.h(xAncilla[i])
+                circuit.measure(xAncilla[i], xSyndrome[i])
+            else:
+                # Z-stabilizer measurement
+                i = stabIdx - nXChecks
+                for j in range(nData):
+                    if hZ[i, j] == 1:
+                        circuit.cx(dataQubits[j], zAncilla[i])
+                circuit.measure(zAncilla[i], zSyndrome[i])
+
+        if gIdx < len(groups) - 1:
+            circuit.barrier()
+
+    return circuit
+
+
 # ---------------------------------------------------------------------------
 # Bivariate Bicycle (BB) codes
 # ---------------------------------------------------------------------------
@@ -488,3 +594,89 @@ def bivariateBicycleCode(
     hZ = np.hstack([B.T, A.T]) % 2
 
     return hX.astype(int), hZ.astype(int)
+
+
+# ---------------------------------------------------------------------------
+# Fiber Bundle codes
+# ---------------------------------------------------------------------------
+
+
+def fiberBundleCode(
+    baseH: np.ndarray,
+    fiberH: np.ndarray,
+    twist: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fiber bundle CSS code from a twisted product of two classical codes.
+
+    Given a base code with parity check matrix baseH (mB x nB), a fiber code
+    with parity check matrix fiberH (mF x nF), and a twist matrix
+    (mB x nB) of integers specifying cyclic shifts on the fiber, this
+    constructs a CSS code via:
+
+      H_X = [twistedKron(baseH, nF) | I_{mB} (x) fiberH^T]
+      H_Z = [I_{nB} (x) fiberH | twistedKron(baseH^T, mF)]
+
+    The twist replaces each 1 in the Kronecker product baseH (x) I with a
+    cyclic permutation matrix P(nF, twist[i,j]) for H_X (left block), and
+    P(mF, twist[i,j]) for H_Z (right block).
+
+    When twist is all zeros, the result matches the standard hypergraph product.
+
+    The CSS condition requires compatibility between the twist and the fiber
+    code. Raises ValueError if H_X @ H_Z^T != 0 (mod 2).
+
+    Returns (hX, hZ).
+    """
+    baseH = np.asarray(baseH, dtype=int)
+    fiberH = np.asarray(fiberH, dtype=int)
+    twist = np.asarray(twist, dtype=int)
+
+    mB, nB = baseH.shape
+    mF, nF = fiberH.shape
+
+    if twist.shape != (mB, nB):
+        raise ValueError(
+            f"Twist matrix shape {twist.shape} must match baseH shape ({mB}, {nB})."
+        )
+
+    # Left block of H_X: twisted Kronecker product (mB*nF x nB*nF)
+    # Each 1 in baseH[i,j] becomes P(nF, twist[i,j]) instead of I_{nF}
+    leftX = np.zeros((mB * nF, nB * nF), dtype=int)
+    for i in range(mB):
+        for j in range(nB):
+            if baseH[i, j] == 1:
+                leftX[
+                    i * nF : (i + 1) * nF,
+                    j * nF : (j + 1) * nF,
+                ] = _cyclicPermutation(nF, int(twist[i, j]))
+
+    # Right block of H_X: standard I_{mB} (x) fiberH^T (mB*nF x mB*mF)
+    rightX = np.kron(np.eye(mB, dtype=int), fiberH.T) % 2
+
+    hX = np.hstack([leftX, rightX]).astype(int) % 2
+
+    # Left block of H_Z: standard I_{nB} (x) fiberH (nB*mF x nB*nF)
+    leftZ = np.kron(np.eye(nB, dtype=int), fiberH) % 2
+
+    # Right block of H_Z: twisted Kronecker product (nB*mF x mB*mF)
+    # Each 1 in baseH^T[j,i] = baseH[i,j] becomes P(mF, twist[i,j])
+    rightZ = np.zeros((nB * mF, mB * mF), dtype=int)
+    for i in range(mB):
+        for j in range(nB):
+            if baseH[i, j] == 1:
+                rightZ[
+                    j * mF : (j + 1) * mF,
+                    i * mF : (i + 1) * mF,
+                ] = _cyclicPermutation(mF, int(twist[i, j]))
+
+    hZ = np.hstack([leftZ, rightZ]).astype(int) % 2
+
+    # Validate CSS condition
+    product = (hX @ hZ.T) % 2
+    if not np.all(product == 0):
+        raise ValueError(
+            "Fiber bundle construction violates CSS condition: "
+            "H_X @ H_Z^T != 0 (mod 2). Check twist matrix compatibility."
+        )
+
+    return hX, hZ
