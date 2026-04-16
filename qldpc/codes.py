@@ -19,7 +19,7 @@ def _gf2RowReduce(matrix: np.ndarray) -> tuple[np.ndarray, list]:
 
     Returns (reduced matrix, list of pivot column indices).
     """
-    m = matrix.copy().astype(int) % 2
+    m: np.ndarray = matrix.copy().astype(int) % 2
     nRows, nCols = m.shape
     pivots: list = []
     row = 0
