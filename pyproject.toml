@@ -43,7 +43,7 @@ dependencies = [
 
 [project.optional-dependencies]
 quantum = [
-    "qiskit>=0.45",
+    "qiskit>=2.3.1",
     "qiskit-aer>=0.12",
 ]
 decoders = [
