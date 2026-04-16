@@ -4,11 +4,11 @@ Tests for qldpc.processor module.
 Covers QuantumLDPCProcessor initialization and basic operations.
 """
 
-import pytest
 import numpy as np
-from qldpc.processor import QuantumLDPCProcessor, QISKIT_AVAILABLE
-from qldpc.components import ComponentType, Component3D
+
+from qldpc.components import Component3D, ComponentType
 from qldpc.config import Config
+from qldpc.processor import QuantumLDPCProcessor
 
 
 class TestProcessorInit:

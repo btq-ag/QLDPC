@@ -208,3 +208,32 @@ def configure_dark_3d_axes(ax, title: str = ""):
     ax.grid(color=DARK_GRID, alpha=0.3)
     if title:
         ax.set_title(title, color=DARK_TEXT, fontweight="bold")
+
+
+def applyDarkRcParams() -> None:
+    """Apply the shared dark theme to matplotlib rcParams.
+
+    Use this in standalone scripts and visualization modules that do not
+    have a tkinter root window. Replaces inline rcParams blocks.
+    """
+    import matplotlib as mpl
+
+    mpl.rcParams.update(
+        {
+            "figure.facecolor": DARK_BG,
+            "axes.facecolor": DARK_AXES,
+            "savefig.facecolor": DARK_BG,
+            "savefig.edgecolor": "none",
+            "text.color": DARK_TEXT,
+            "axes.labelcolor": DARK_TEXT,
+            "xtick.color": DARK_TEXT,
+            "ytick.color": DARK_TEXT,
+            "axes.edgecolor": DARK_EDGE,
+            "axes.titlecolor": DARK_TEXT,
+            "grid.color": DARK_GRID,
+            "legend.facecolor": DARK_PANEL,
+            "legend.edgecolor": DARK_EDGE,
+            "legend.labelcolor": DARK_TEXT,
+            "figure.edgecolor": DARK_BG,
+        }
+    )

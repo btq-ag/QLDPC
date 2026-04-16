@@ -8,8 +8,26 @@ and threshold analysis.
 Author: Jeffrey Morais
 """
 
+from qldpc.codes import (
+    buildSyndromeCircuit,
+    codeDistance,
+    codeParameters,
+    hypergraphProduct,
+    logicalOperators,
+    repetitionCode,
+    shorCode,
+    steaneCode,
+    validateCss,
+)
 from qldpc.components import Component3D, ComponentType, ViewMode
 from qldpc.config import LDPC_COLORS, ColorPalette, Config, GridConfig
+from qldpc.decoders import BeliefPropagationDecoder
+from qldpc.noise import (
+    bitflipChannel,
+    depolarizingChannel,
+    depolarizingErrors,
+    phaseflipChannel,
+)
 from qldpc.processor import QuantumLDPCProcessor
 
 __version__ = "1.0.0"
@@ -24,4 +42,18 @@ __all__ = [
     "ColorPalette",
     "LDPC_COLORS",
     "QuantumLDPCProcessor",
+    "BeliefPropagationDecoder",
+    "validateCss",
+    "steaneCode",
+    "shorCode",
+    "repetitionCode",
+    "hypergraphProduct",
+    "codeParameters",
+    "codeDistance",
+    "logicalOperators",
+    "buildSyndromeCircuit",
+    "depolarizingChannel",
+    "depolarizingErrors",
+    "bitflipChannel",
+    "phaseflipChannel",
 ]

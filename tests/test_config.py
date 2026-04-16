@@ -5,13 +5,18 @@ Covers configuration defaults, color validity, and component color mappings.
 """
 
 import re
-import pytest
-from qldpc.config import (
-    Config, GridConfig, UIConfig, SimulationConfig,
-    ColorPalette, LDPC_COLORS, COMPONENT_COLORS, DEFAULT_CONFIG,
-)
-from qldpc.components import ComponentType
 
+from qldpc.components import ComponentType
+from qldpc.config import (
+    COMPONENT_COLORS,
+    DEFAULT_CONFIG,
+    LDPC_COLORS,
+    ColorPalette,
+    Config,
+    GridConfig,
+    SimulationConfig,
+    UIConfig,
+)
 
 HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 

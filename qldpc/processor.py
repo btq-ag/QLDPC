@@ -5,20 +5,17 @@ This module handles quantum circuit construction, syndrome calculation,
 error correction decoding, and quantum state simulation.
 Author: Jeffrey Morais"""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 
 from .components import Component3D, ComponentType
 from .config import DEFAULT_CONFIG
-
-if TYPE_CHECKING:
-    pass
+from .decoders import BeliefPropagationDecoder
 
 # Quantum computing libraries
 try:
     from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
-    from qiskit.quantum_info import Operator, Statevector
     from qiskit_aer import AerSimulator
 
     QISKIT_AVAILABLE = True
@@ -45,11 +42,11 @@ class QuantumLDPCProcessor:
         self.config = config or DEFAULT_CONFIG
         self.circuit = None
         self.current_state = None
-        self.syndrome_history: List[np.ndarray] = []
-        self.error_corrections: List[Dict[str, Any]] = []
+        self.syndrome_history: list[np.ndarray] = []
+        self.error_corrections: list[dict[str, Any]] = []
 
     def build_circuit_from_components(
-        self, components: List[Component3D]
+        self, components: list[Component3D]
     ) -> Optional[QuantumCircuit]:
         """
         Build a Qiskit quantum circuit from placed components.
@@ -80,7 +77,7 @@ class QuantumLDPCProcessor:
 
             # Create lane-to-qubit mapping (sorted by Y-position for consistent ordering)
             qubit_components_sorted = sorted(qubit_components, key=lambda c: c.position[1])
-            lane_to_qubit: Dict[int, int] = {}
+            lane_to_qubit: dict[int, int] = {}
             for idx, comp in enumerate(qubit_components_sorted):
                 lane = comp.position[1]
                 if lane not in lane_to_qubit:
@@ -122,7 +119,7 @@ class QuantumLDPCProcessor:
         component: Component3D,
         qreg: QuantumRegister,
         creg: ClassicalRegister,
-        lane_to_qubit: Dict[int, int],
+        lane_to_qubit: dict[int, int],
     ):
         """
         Add a single component to the quantum circuit.
@@ -194,7 +191,7 @@ class QuantumLDPCProcessor:
         elif comp_type == ComponentType.RESET and qubit_idx >= 0:
             circuit.reset(qreg[qubit_idx])
 
-    def _simulate_circuit_build(self, components: List[Component3D]):
+    def _simulate_circuit_build(self, components: list[Component3D]):
         """Simulate circuit building when Qiskit is not available."""
         qubit_components = [
             c
@@ -209,7 +206,7 @@ class QuantumLDPCProcessor:
             "depth": max([comp.position[0] for comp in components], default=0) + 1,
         }
 
-    def calculate_syndrome(self, components: List[Component3D]) -> np.ndarray:
+    def calculate_syndrome(self, components: list[Component3D]) -> np.ndarray:
         """
         Calculate syndrome for current circuit configuration.
 
@@ -235,7 +232,7 @@ class QuantumLDPCProcessor:
         num_checks = len(parity_checks)
         num_data = len(data_qubits)
 
-        parity_matrix = np.zeros((num_checks, num_data), dtype=int)
+        parity_matrix: np.ndarray = np.zeros((num_checks, num_data), dtype=int)
 
         # Simulate connections between parity checks and data qubits
         connection_distance = self.config.simulation.parity_connection_distance
@@ -257,7 +254,7 @@ class QuantumLDPCProcessor:
                     parity_matrix[i, i + 1] = 1
 
         # Build error vector from actual X_GATE positions in the circuit
-        error_vector = np.zeros(num_data, dtype=int)
+        error_vector: np.ndarray = np.zeros(num_data, dtype=int)
 
         # Find all X gates and map them to data qubits by Y-coordinate (lane)
         x_gates = [c for c in components if c.component_type == ComponentType.X_GATE]
@@ -275,8 +272,8 @@ class QuantumLDPCProcessor:
         return syndrome
 
     def perform_error_correction(
-        self, syndrome: np.ndarray, components: List[Component3D]
-    ) -> Dict[str, Any]:
+        self, syndrome: np.ndarray, components: list[Component3D]
+    ) -> dict[str, Any]:
         """
         Perform belief propagation decoding for error correction.
 
@@ -297,44 +294,60 @@ class QuantumLDPCProcessor:
         if num_bits == 0:
             return {"success": False, "error": "No data qubits found"}
 
-        # Simple belief propagation simulation
+        # Build parity check matrix (same logic as calculate_syndrome)
+        parity_checks = [c for c in components if c.component_type == ComponentType.PARITY_CHECK]
+        ancilla_qubits = [c for c in components if c.component_type == ComponentType.ANCILLA_QUBIT]
+        if not parity_checks and ancilla_qubits:
+            parity_checks = ancilla_qubits
+
+        if not parity_checks:
+            return {"success": False, "error": "No parity checks found"}
+
+        num_checks = len(parity_checks)
+        parityMatrix: np.ndarray = np.zeros((num_checks, num_bits), dtype=int)
+
+        connection_distance = self.config.simulation.parity_connection_distance
+        for i, check in enumerate(parity_checks):
+            for j, data in enumerate(data_qubits):
+                distance = abs(check.position[0] - data.position[0]) + abs(
+                    check.position[1] - data.position[1]
+                )
+                if distance <= connection_distance:
+                    parityMatrix[i, j] = 1
+
+        if np.sum(parityMatrix) == 0:
+            for i in range(min(num_checks, num_bits)):
+                parityMatrix[i, i] = 1
+                if i + 1 < num_bits:
+                    parityMatrix[i, i + 1] = 1
+
+        # Decode with real belief propagation
         max_iterations = self.config.simulation.bp_max_iterations
-        convergence_threshold = self.config.simulation.bp_convergence_threshold
+        channelProb = getattr(self.config.simulation, "channel_probability", 0.05)
 
-        # Initialize belief probabilities
-        beliefs = np.ones(num_bits) * 0.5
+        decoder = BeliefPropagationDecoder(
+            parityMatrix, channelProb=channelProb, maxIterations=max_iterations
+        )
+        decoder.reset(syndrome)
 
-        correction_history = []
-
+        correctionHistory = []
         for iteration in range(max_iterations):
-            old_beliefs = beliefs.copy()
-
-            # Update beliefs based on syndrome constraints
-            if len(syndrome) > 0:
-                syndrome_weight = np.sum(syndrome) / len(syndrome)
-                for i in range(num_bits):
-                    if syndrome_weight > 0.5:
-                        beliefs[i] = min(0.9, beliefs[i] + syndrome_weight * 0.2)
-                    else:
-                        beliefs[i] = max(0.1, beliefs[i] - (1 - syndrome_weight) * 0.1)
-
-            beliefs = np.clip(beliefs, 0.01, 0.99)
-            correction_history.append(beliefs.copy())
-
-            # Check convergence
-            if np.linalg.norm(beliefs - old_beliefs) < convergence_threshold:
+            converged = decoder.step()
+            correctionHistory.append(decoder.errorProbabilities.copy())
+            if converged:
                 break
 
-        # Determine correction
-        correction = (beliefs > 0.5).astype(int)
+        correction = decoder.correction
+        beliefs = decoder.errorProbabilities
 
         result = {
             "success": True,
             "correction": correction,
             "beliefs": beliefs,
-            "iterations": iteration + 1,
-            "history": correction_history,
-            "syndrome_weight": np.sum(syndrome),
+            "iterations": decoder.iteration,
+            "history": correctionHistory,
+            "converged": decoder.converged,
+            "syndrome_weight": int(np.sum(syndrome)),
             "num_data_qubits": num_bits,
         }
 
@@ -342,8 +355,8 @@ class QuantumLDPCProcessor:
         return result
 
     def simulate_evolution(
-        self, components: List[Component3D], shots: int = None
-    ) -> Dict[str, Any]:
+        self, components: list[Component3D], shots: Optional[int] = None
+    ) -> dict[str, Any]:
         """
         Simulate quantum state evolution for the circuit.
 

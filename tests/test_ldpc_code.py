@@ -5,8 +5,8 @@ Covers parity matrix generation, error injection, syndrome calculation,
 and belief propagation decoding.
 """
 
-import pytest
 import numpy as np
+
 from qldpc.simulation.ldpc_circuit import QuantumLDPCCode
 
 
@@ -97,8 +97,15 @@ class TestBeliefPropagation:
         # Run several BP iterations
         for _ in range(5):
             code.belief_propagation_step()
-        # Beliefs should have shifted from uniform
+        # Beliefs on the errored qubit should shift toward 1 (error likely)
         assert code.bp_iteration == 5
+        assert code.variable_beliefs[5, 1] > 0.5, (
+            "BP should identify qubit 5 as likely errored"
+        )
+        # At least some qubit should have moved from the uniform prior
+        assert not np.allclose(code.variable_beliefs[:, 1], 0.5), (
+            "BP should update beliefs from the uniform prior"
+        )
 
 
 class TestCooperativity:

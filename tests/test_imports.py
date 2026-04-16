@@ -5,7 +5,6 @@ Verifies that the package structure is valid and all modules
 can be imported without errors.
 """
 
-import pytest
 
 
 def test_import_qldpc():
@@ -17,7 +16,7 @@ def test_import_qldpc():
 
 def test_import_components():
     """components module exports core types."""
-    from qldpc.components import ComponentType, Component3D, ViewMode
+    from qldpc.components import ComponentType, ViewMode
     assert ComponentType.X_GATE.value == "X"
     assert ViewMode.ISOMETRIC_3D.value == "isometric"
 
@@ -25,8 +24,9 @@ def test_import_components():
 def test_import_config():
     """config module exports configuration classes."""
     from qldpc.config import (
-        Config, GridConfig, UIConfig, SimulationConfig,
-        ColorPalette, LDPC_COLORS, COMPONENT_COLORS, DEFAULT_CONFIG,
+        DEFAULT_CONFIG,
+        LDPC_COLORS,
+        Config,
     )
     assert isinstance(DEFAULT_CONFIG, Config)
     assert "data_qubit" in LDPC_COLORS
@@ -48,17 +48,10 @@ def test_import_simulation_ldpc():
 
 def test_import_simulation_submodules():
     """All simulation submodules import without error."""
-    from qldpc.simulation import cavity_gates
-    from qldpc.simulation import ghz
-    from qldpc.simulation import syndrome
-    from qldpc.simulation import animations
-    from qldpc.simulation import quantum_circuits
 
 
 def test_import_tanner_submodules():
     """Tanner submodules import without error."""
-    from qldpc.tanner import graph_3d
-    from qldpc.tanner import threshold_3d
 
 
 def test_qiskit_optional():

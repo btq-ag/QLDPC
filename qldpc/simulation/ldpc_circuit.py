@@ -26,6 +26,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
+from qldpc.decoders import BeliefPropagationDecoder
 from qldpc.theme import (
     COLOR_CAVITY_BUS,
     COLOR_DATA_QUBIT,
@@ -69,21 +70,31 @@ ANIMATION_INTERVAL = 120  # ms
 class QuantumLDPCCode:
     """Quantum LDPC code with belief-propagation decoding."""
 
-    def __init__(self, n_data: int = 21, n_checks: int = 12):
-        self.n_data = n_data
-        self.n_checks = n_checks
-        self.distance = int(np.sqrt(n_data))
+    def __init__(
+        self,
+        n_data: int = 21,
+        n_checks: int = 12,
+        parityMatrix: np.ndarray = None,
+        channelProb: float = DEFAULT_ERROR_RATE,
+    ):
+        if parityMatrix is not None:
+            self.parity_matrix = np.asarray(parityMatrix, dtype=int)
+            self.n_checks, self.n_data = self.parity_matrix.shape
+        else:
+            self.n_data = n_data
+            self.n_checks = n_checks
+            self.parity_matrix = self._generate_ldpc_matrix()
 
-        self.parity_matrix = self._generate_ldpc_matrix()
+        self.distance = int(np.sqrt(self.n_data))
 
         # 0=|0>, 1=|1>, 2=X error, 3=Z error, 4=Y error
-        self.qubit_states = np.zeros(n_data, dtype=int)
-        self.syndrome = np.zeros(n_checks, dtype=int)
+        self.qubit_states = np.zeros(self.n_data, dtype=int)
+        self.syndrome = np.zeros(self.n_checks, dtype=int)
 
-        # Belief propagation state
-        self.variable_beliefs = np.full((n_data, 2), 0.5)
-        self.check_to_var_messages = np.full((n_checks, n_data), 0.5)
-        self.var_to_check_messages = np.full((n_data, n_checks), 0.5)
+        # Belief propagation state (probability domain for GUI)
+        self.variable_beliefs = np.full((self.n_data, 2), 0.5)
+        self.check_to_var_messages = np.full((self.n_checks, self.n_data), 0.5)
+        self.var_to_check_messages = np.full((self.n_data, self.n_checks), 0.5)
 
         # Cavity QED
         self.cavity_cooperativity = DEFAULT_COOPERATIVITY
@@ -93,6 +104,13 @@ class QuantumLDPCCode:
         self.bp_iteration = 0
         self.max_bp_iterations = 10
         self.decoding_complete = False
+
+        # Real BP decoder (LLR domain, synced to GUI arrays each step)
+        self._decoder = BeliefPropagationDecoder(
+            self.parity_matrix,
+            channelProb=channelProb,
+            maxIterations=self.max_bp_iterations,
+        )
 
     # -- matrix generation --------------------------------------------------
 
@@ -124,35 +142,43 @@ class QuantumLDPCCode:
 
     # -- belief propagation -------------------------------------------------
 
-    def belief_propagation_step(self):
+    def belief_propagation_step(self) -> None:
         if self.bp_iteration >= self.max_bp_iterations:
             return
 
-        # Check -> variable messages
-        for ci in range(self.n_checks):
-            connected = np.where(self.parity_matrix[ci] == 1)[0]
-            for vi in connected:
-                if self.syndrome[ci] == 0:
-                    self.check_to_var_messages[ci, vi] = 0.5
-                else:
-                    self.check_to_var_messages[ci, vi] = 0.5
+        # On the first step, reset the decoder with the current syndrome
+        if self.bp_iteration == 0:
+            self._decoder.reset(self.syndrome)
 
-        # Variable -> check messages and beliefs
-        for vi in range(self.n_data):
-            checks = np.where(self.parity_matrix[:, vi] == 1)[0]
-            incoming = self.check_to_var_messages[checks, vi]
-            if len(incoming) > 0:
-                b0 = np.prod(incoming) * 0.9
-                b1 = np.prod(1.0 - incoming) * 0.1
-                norm = b0 + b1
-                if norm > 0:
-                    self.variable_beliefs[vi, 0] = b0 / norm
-                    self.variable_beliefs[vi, 1] = b1 / norm
-            for ci in checks:
-                self.var_to_check_messages[vi, ci] = self.variable_beliefs[vi, 1]
+        converged = self._decoder.step()
+
+        # Sync GUI-facing probability arrays from the LLR decoder state
+        errorProbs = self._decoder.errorProbabilities
+        self.variable_beliefs[:, 1] = errorProbs
+        self.variable_beliefs[:, 0] = 1.0 - errorProbs
+
+        for c in range(self.n_checks):
+            for v in range(self.n_data):
+                if self.parity_matrix[c, v] == 1:
+                    llr = self._decoder.checkToVar[c, v]
+                    self.check_to_var_messages[c, v] = 1.0 / (
+                        1.0 + np.exp(np.clip(llr, -500, 500))
+                    )
+                else:
+                    self.check_to_var_messages[c, v] = 0.5
+
+        for v in range(self.n_data):
+            for c in range(self.n_checks):
+                if self.parity_matrix[c, v] == 1:
+                    llr = self._decoder.varToCheck[v, c]
+                    self.var_to_check_messages[v, c] = 1.0 / (
+                        1.0 + np.exp(np.clip(llr, -500, 500))
+                    )
+                else:
+                    self.var_to_check_messages[v, c] = 0.5
 
         self.bp_iteration += 1
-        if self.bp_iteration >= self.max_bp_iterations:
+        if converged or self.bp_iteration >= self.max_bp_iterations:
             self.decoding_complete = True
 
     def reset_decoding(self):

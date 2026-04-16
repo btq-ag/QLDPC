@@ -5,14 +5,16 @@ Covers ComponentType enum classification, Component3D serialization,
 and view mode utilities.
 """
 
-import pytest
 from qldpc.components import (
-    ComponentType, Component3D, ViewMode,
+    CIRCUIT_MODE_CATEGORIES,
+    LDPC_PHYSICAL_CATEGORIES,
+    LDPC_TANNER_CATEGORIES,
+    SURFACE_MODE_CATEGORIES,
+    Component3D,
+    ComponentType,
+    ViewMode,
     get_categories_for_mode,
-    CIRCUIT_MODE_CATEGORIES, SURFACE_MODE_CATEGORIES,
-    LDPC_TANNER_CATEGORIES, LDPC_PHYSICAL_CATEGORIES,
 )
-
 
 # ---------- ViewMode ----------
 
