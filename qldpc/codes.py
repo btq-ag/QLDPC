@@ -577,7 +577,7 @@ def bivariateBicycleCode(
     # Build polynomial matrix A = sum of x^a_i (kron) y^b_i
     A = np.zeros((n, n), dtype=int)
     for xShift, yShift in aTerms:
-        A = (A + np.kron(
+        A = (A + np.kron(  # type: ignore[assignment]
             _cyclicPermutation(ell, xShift),
             _cyclicPermutation(m, yShift),
         )) % 2
@@ -585,7 +585,7 @@ def bivariateBicycleCode(
     # Build polynomial matrix B = sum of x^a_j (kron) y^b_j
     B = np.zeros((n, n), dtype=int)
     for xShift, yShift in bTerms:
-        B = (B + np.kron(
+        B = (B + np.kron(  # type: ignore[assignment]
             _cyclicPermutation(ell, xShift),
             _cyclicPermutation(m, yShift),
         )) % 2

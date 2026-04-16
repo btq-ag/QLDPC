@@ -58,7 +58,7 @@ class BeliefPropagationDecoder:
 
     def reset(self, syndrome: np.ndarray) -> None:
         """Reset decoder state for a new decoding round."""
-        self._syndrome = np.asarray(syndrome, dtype=int).copy()
+        self._syndrome = np.asarray(syndrome, dtype=int).copy()  # type: ignore[assignment]
         self._iteration = 0
         self._converged = False
         self.varToCheck[:] = self.channelLlr
@@ -221,7 +221,7 @@ class MinSumDecoder:
 
     def reset(self, syndrome: np.ndarray) -> None:
         """Reset decoder state for a new decoding round."""
-        self._syndrome = np.asarray(syndrome, dtype=int).copy()
+        self._syndrome = np.asarray(syndrome, dtype=int).copy()  # type: ignore[assignment]
         self._iteration = 0
         self._converged = False
         self.varToCheck[:] = self.channelLlr

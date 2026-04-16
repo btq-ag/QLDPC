@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/btq-ag/QLDPC/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/btq-ag/QLDPC/actions/workflows/ci.yml/badge.svg" /></a>
-  <a href="https://www.python.org/"><img alt="Python 3.9+" src="https://img.shields.io/badge/python-3.9%2B-blue?logo=python&logoColor=white" /></a>
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" /></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green" /></a>
   <a href="#quick-start"><img alt="pip install" src="https://img.shields.io/badge/install-pip%20install%20--e%20.-orange" /></a>
 </p>
@@ -35,13 +35,13 @@
 
 ## Overview
 
-Build, visualize, and simulate quantum error correction circuits interactively. The toolkit covers surface codes, LDPC codes, and Tanner graph topologies with real-time Qiskit-backed computation. Includes belief propagation decoding, cavity QED parameter exploration, threshold landscape analysis, and 30 pre-built example circuits.
+Build, visualize, and simulate quantum error correction circuits interactively. The toolkit covers surface codes, LDPC codes, and Tanner graph topologies with real-time computation via optional Qiskit integration. Decoders include belief propagation, min-sum, and OSD post-processing. Ships with cavity QED parameter exploration, threshold landscape analysis, Monte Carlo simulation, and 30 pre-built example circuits.
 
 ### Why QLDPC?
 
 Quantum error correction is essential for fault-tolerant quantum computing, but the theory is dense and the code structures are hard to visualize. Surface codes offer geometric locality at the cost of enormous qubit overhead. The 2020-2022 breakthroughs in quantum LDPC codes (lifted product codes by Panteleev and Kalachev, quantum Tanner codes by Leverrier and Zemor) showed for the first time that constant rate **and** linear distance are achievable simultaneously, dramatically reducing overhead. However, these codes require non-local stabilizers that are difficult to build intuition for.
 
-**QLDPC** bridges that gap. It provides drag-and-drop circuit construction, real-time belief propagation decoding, interactive Tanner graph exploration, and cavity QED parameter sweeps, all in a unified dark-themed toolkit. Whether you are a researcher prototyping new code families or a student learning about quantum error correction for the first time, QLDPC gives you hands-on, visual access to the structures that will underpin the next generation of quantum hardware.
+**QLDPC** bridges that gap with drag-and-drop circuit construction and real-time belief propagation decoding. It includes interactive Tanner graph exploration and cavity QED parameter sweeps in a unified dark-themed toolkit. Whether you are a researcher prototyping new code families or a student learning about quantum error correction, QLDPC gives you hands-on, visual access to the structures that will underpin future quantum hardware.
 
 ---
 
@@ -87,7 +87,7 @@ Full-featured drag-and-drop circuit editor with live isometric 3D rendering. Sup
 
 ### Surface Code Mode
 
-Press `V` to toggle a top-down 2D lattice view of the surface code. X-stabilizers (burgundy) and Z-stabilizers (purple) tile the lattice with data qubits on edges. Click any data qubit to inject X, Z, or Y errors and watch syndrome propagation ripple through the stabilizer network in real time, providing a direct visual demonstration of how local errors are flagged by adjacent check operators.
+Press `V` to toggle a top-down 2D lattice view of the surface code. X-stabilizers (burgundy) and Z-stabilizers (purple) tile the lattice with data qubits on edges. Click any data qubit to inject X, Z, or Y errors and watch syndrome propagation ripple through the stabilizer network in real time, showing how adjacent check operators flag local errors.
 
 ![Surface Code Mode](Plots/Surface.gif)
 
@@ -99,7 +99,7 @@ Press `B` to cycle through LDPC-specific rendering modes. The **Tanner graph** v
 
 ### Interactive Tutorial System
 
-A 10-step guided tutorial accessible from the Help menu. Covers qubit placement, single- and multi-qubit gates, controlled operations, repetition code construction, and surface code basics. Each step highlights the relevant UI elements and provides context boxes explaining the underlying quantum error correction concepts.
+An 11-step guided tutorial accessible from the Help menu. Covers qubit placement, single- and multi-qubit gates, controlled operations, repetition code construction, and surface code basics. Each step highlights the relevant UI elements and provides context boxes explaining the underlying quantum error correction concepts.
 
 ![Advanced Tutorial](Plots/AdvancedTutorial.gif)
 
@@ -111,7 +111,7 @@ Dark-themed tkinter GUI with embedded matplotlib panels for interactive LDPC exp
 
 ### 3D Tanner Graph Visualizer
 
-Interactive 3D exploration of LDPC Tanner graph topologies with force-directed and spectral layout engines. Rotate, zoom, and click individual nodes to highlight their check neighborhoods. Compare hypergraph product, lifted product, and quantum Tanner code constructions side by side, and propagate syndromes through the graph to build intuition for decoder behavior on different code families.
+Interactive 3D exploration of LDPC Tanner graph topologies with force-directed and spectral layout engines. Rotate, zoom, and click individual nodes to highlight their check neighborhoods. Compare different code family topologies side by side and propagate syndromes through the graph to build intuition for decoder behavior.
 
 ```bash
 qldpc-tanner
@@ -121,7 +121,7 @@ qldpc-tanner
 
 ### Static Visualizations
 
-Publication-quality dark-themed plots generated by the simulation modules. Covers GHZ state fidelity, syndrome extraction circuits, error analysis, and animated LDPC process walkthroughs. Regenerate all figures at once with:
+Presentation-ready dark-themed plots generated by the simulation modules. Covers GHZ state fidelity, syndrome extraction circuits, error analysis, and animated LDPC process walkthroughs. Regenerate all figures at once with:
 
 ```bash
 python generate_all_plots.py            # PNGs + GIF animations
@@ -137,6 +137,17 @@ python generate_all_plots.py --skip-animations   # PNGs only (faster)
 
 ![LDPC Tanner Graph Animation](Plots/ldpc_tanner_graph_animation.gif)
 
+### Code Families & Decoders
+
+Constructors for multiple quantum error correction code families, with built-in CSS validation ($H_X H_Z^T = 0$):
+
+- **Steane [[7,1,3]]** and **Shor [[9,1,3]]** codes
+- **Hypergraph Product codes**: parameterized constructor from two classical parity check matrices
+- **Bivariate Bicycle codes**: CSS codes from $\mathbb{Z}_l \times \mathbb{Z}_m$, targeting [[72,12,6]], [[90,8,10]], [[144,12,12]]
+- **Fiber Bundle codes**: twisted product construction for asymmetric distance scaling
+
+Decoders include standard belief propagation, normalized and offset min-sum variants, OSD-0 post-processing, MWPM (via PyMatching), and a sliding window decoder for circuit-level noise. A Monte Carlo runner with configurable noise channels (bit-flip, phase-flip, depolarizing) generates threshold curves.
+
 ### Resources & Shortcuts
 
 Quick access to keyboard shortcuts, component legend, and reference materials via the Help menu.
@@ -150,9 +161,13 @@ Quick access to keyboard shortcuts, component legend, and reference materials vi
 ```
 qldpc/
     __init__.py              # Package root (ComponentType, Config, Processor)
+    codes.py                 # Code constructors (Steane, Shor, HGP, BB, Fiber Bundle)
     components.py            # ViewMode, ComponentType, Component3D
     config.py                # GridConfig, UIConfig, ColorPalette, LDPC colors
+    decoders.py              # BP, MinSum, OSD, MWPM, SlidingWindow decoders
+    noise.py                 # Noise channels (bit-flip, phase-flip, depolarizing)
     processor.py             # QuantumLDPCProcessor (Qiskit backend)
+    theme.py                 # Dark theme configuration
     builder/
         app.py               # CircuitBuilder3D main application (tkinter)
         tutorials.py         # Interactive tutorial screens
@@ -165,6 +180,7 @@ qldpc/
         cavity_gates.py      # Cooperativity analysis, tri-layer architecture
         ghz.py               # GHZ state preparation and fidelity
         syndrome.py          # Syndrome extraction visualization
+        monte_carlo.py       # Monte Carlo threshold estimation runner
         animations.py        # Tanner graph, BP, threshold animations
         quantum_circuits.py  # Static circuit diagram generation
     tanner/
@@ -173,7 +189,7 @@ qldpc/
 saved_circuits/
     circuits/                # 22 pre-built quantum circuits
     surface/                 # 8 surface code configurations
-tests/                       # pytest suite (64 tests)
+tests/                       # pytest suite (156 tests)
 docs/                        # Technical documentation
 Plots/                       # Generated figures and screenshots
 ```
@@ -189,7 +205,7 @@ Plots/                       # Generated figures and screenshots
 
 | Technology | Role |
 |------------|------|
-| Python 3.9+ | Core language |
+| Python 3.10+ | Core language |
 | tkinter | Dark-themed GUI framework (all interactive tools) |
 | matplotlib | Embedded plotting, static figures, animations |
 | NumPy | Numerical computation, parity matrices |
@@ -307,7 +323,7 @@ For classical LDPC codes, BP achieves near-optimal decoding. For quantum codes, 
 
 ## Contact
 
-**Jeffrey Morais** - [Website](https://jeffreymorais.netlify.app) | [GitHub](https://github.com/IsolatedSingularity) | [LinkedIn](https://www.linkedin.com/in/jeffrey-morais) | [btq-ag/QLDPC](https://github.com/btq-ag/QLDPC)
+**Jeffrey Morais**, Quantum Software Lead at BTQ - [Website](https://ichor.pages.dev/) | [GitHub](https://github.com/IsolatedSingularity) | [LinkedIn](https://www.linkedin.com/in/jeffrey-morais) | [btq-ag/QLDPC](https://github.com/btq-ag/QLDPC)
 
 Questions, ideas, or contributions are welcome! Open an [issue](https://github.com/btq-ag/QLDPC/issues) or see [CONTRIBUTING.md](CONTRIBUTING.md).
 

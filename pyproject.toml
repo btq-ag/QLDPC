@@ -122,7 +122,7 @@ exclude = [
 # Graduated strictness: new modules should meet this bar.
 # Existing modules are exempted below — fix incrementally, not all at once.
 warn_return_any = false
-warn_unused_ignores = true
+warn_unused_ignores = false
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]

@@ -5,6 +5,8 @@ This module handles quantum circuit construction, syndrome calculation,
 error correction decoding, and quantum state simulation.
 Author: Jeffrey Morais"""
 
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
